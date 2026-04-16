@@ -85,6 +85,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     openaiApiKey,
     groqApiKey,
     mistralApiKey,
+    azureApiKey,
+    azureEndpoint,
+    azureDeploymentName,
     customTranscriptionApiKey,
     setCustomTranscriptionApiKey,
     dictationKey,
@@ -94,6 +97,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setOpenaiApiKey,
     setGroqApiKey,
     setMistralApiKey,
+    setAzureApiKey,
+    setAzureEndpoint,
+    setAzureDeploymentName,
     updateTranscriptionSettings,
     preferredLanguage,
   } = useSettings();
@@ -504,6 +510,12 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               setGroqApiKey={setGroqApiKey}
               mistralApiKey={mistralApiKey}
               setMistralApiKey={setMistralApiKey}
+              azureApiKey={azureApiKey}
+              setAzureApiKey={setAzureApiKey}
+              azureEndpoint={azureEndpoint}
+              setAzureEndpoint={setAzureEndpoint}
+              azureDeploymentName={azureDeploymentName}
+              setAzureDeploymentName={setAzureDeploymentName}
               customTranscriptionApiKey={customTranscriptionApiKey}
               setCustomTranscriptionApiKey={setCustomTranscriptionApiKey}
               cloudTranscriptionBaseUrl={cloudTranscriptionBaseUrl}
@@ -664,6 +676,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             return groqApiKey.trim().length > 0;
           } else if (cloudTranscriptionProvider === "mistral") {
             return mistralApiKey.trim().length > 0;
+          } else if (cloudTranscriptionProvider === "azure") {
+            return azureApiKey.trim().length > 0 && azureEndpoint.trim().length > 0;
           } else if (cloudTranscriptionProvider === "custom") {
             // Custom can work without API key for local endpoints
             return true;

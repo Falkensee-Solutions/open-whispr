@@ -47,6 +47,12 @@ export default function AgentModeSettings() {
     setGeminiApiKey,
     groqApiKey,
     setGroqApiKey,
+    azureApiKey,
+    setAzureApiKey,
+    azureEndpoint,
+    setAzureEndpoint,
+    azureDeploymentName,
+    setAzureDeploymentName,
     customReasoningApiKey,
     setCustomReasoningApiKey,
     cloudReasoningBaseUrl,
@@ -118,6 +124,12 @@ export default function AgentModeSettings() {
       setGeminiApiKey={setGeminiApiKey}
       groqApiKey={groqApiKey}
       setGroqApiKey={setGroqApiKey}
+      azureApiKey={azureApiKey}
+      setAzureApiKey={setAzureApiKey}
+      azureEndpoint={azureEndpoint}
+      setAzureEndpoint={setAzureEndpoint}
+      azureDeploymentName={azureDeploymentName}
+      setAzureDeploymentName={setAzureDeploymentName}
       customReasoningApiKey={customReasoningApiKey}
       setCustomReasoningApiKey={setCustomReasoningApiKey}
       mode={mode}

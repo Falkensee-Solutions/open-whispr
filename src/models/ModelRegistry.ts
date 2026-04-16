@@ -269,6 +269,8 @@ export function getModelProvider(modelId: string): string {
     if (modelId.includes("gemini") && !modelId.includes("gemma")) return "gemini";
     if ((modelId.includes("gpt-4") || modelId.includes("gpt-5")) && !modelId.includes("gpt-oss"))
       return "openai";
+    if (modelId === "azure-deployment" || modelId.startsWith("azure-"))
+      return "azure";
     if (
       modelId.includes("qwen/") ||
       modelId.includes("openai/") ||

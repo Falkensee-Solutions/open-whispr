@@ -112,6 +112,30 @@ class EnvironmentManager {
     return this._saveKey("MISTRAL_API_KEY", key);
   }
 
+  getAzureKey() {
+    return this._getKey("AZURE_API_KEY");
+  }
+
+  saveAzureKey(key) {
+    return this._saveKey("AZURE_API_KEY", key);
+  }
+
+  getAzureEndpoint() {
+    return this._getKey("AZURE_ENDPOINT");
+  }
+
+  saveAzureEndpoint(endpoint) {
+    return this._saveKey("AZURE_ENDPOINT", endpoint);
+  }
+
+  getAzureDeploymentName() {
+    return this._getKey("AZURE_DEPLOYMENT_NAME");
+  }
+
+  saveAzureDeploymentName(name) {
+    return this._saveKey("AZURE_DEPLOYMENT_NAME", name);
+  }
+
   getCustomTranscriptionKey() {
     return this._getKey("CUSTOM_TRANSCRIPTION_API_KEY");
   }

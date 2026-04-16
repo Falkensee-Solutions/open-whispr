@@ -48,6 +48,12 @@ export default function NotesOnboarding({ onComplete }: NotesOnboardingProps) {
   const setGeminiApiKey = useSettingsStore((s) => s.setGeminiApiKey);
   const groqApiKey = useSettingsStore((s) => s.groqApiKey);
   const setGroqApiKey = useSettingsStore((s) => s.setGroqApiKey);
+  const azureApiKey = useSettingsStore((s) => s.azureApiKey);
+  const setAzureApiKey = useSettingsStore((s) => s.setAzureApiKey);
+  const azureEndpoint = useSettingsStore((s) => s.azureEndpoint);
+  const setAzureEndpoint = useSettingsStore((s) => s.setAzureEndpoint);
+  const azureDeploymentName = useSettingsStore((s) => s.azureDeploymentName);
+  const setAzureDeploymentName = useSettingsStore((s) => s.setAzureDeploymentName);
   const customReasoningApiKey = useSettingsStore((s) => s.customReasoningApiKey);
   const setCustomReasoningApiKey = useSettingsStore((s) => s.setCustomReasoningApiKey);
 
@@ -182,6 +188,12 @@ export default function NotesOnboarding({ onComplete }: NotesOnboardingProps) {
                   setGeminiApiKey={setGeminiApiKey}
                   groqApiKey={groqApiKey}
                   setGroqApiKey={setGroqApiKey}
+                  azureApiKey={azureApiKey}
+                  setAzureApiKey={setAzureApiKey}
+                  azureEndpoint={azureEndpoint}
+                  setAzureEndpoint={setAzureEndpoint}
+                  azureDeploymentName={azureDeploymentName}
+                  setAzureDeploymentName={setAzureDeploymentName}
                   customReasoningApiKey={customReasoningApiKey}
                   setCustomReasoningApiKey={setCustomReasoningApiKey}
                 />

@@ -191,6 +191,12 @@ interface TranscriptionSectionProps {
   setGroqApiKey: (key: string) => void;
   mistralApiKey: string;
   setMistralApiKey: (key: string) => void;
+  azureApiKey: string;
+  setAzureApiKey: (key: string) => void;
+  azureEndpoint: string;
+  setAzureEndpoint: (endpoint: string) => void;
+  azureDeploymentName: string;
+  setAzureDeploymentName: (name: string) => void;
   customTranscriptionApiKey: string;
   setCustomTranscriptionApiKey: (key: string) => void;
   cloudTranscriptionBaseUrl?: string;
@@ -232,6 +238,12 @@ function TranscriptionSection({
   setGroqApiKey,
   mistralApiKey,
   setMistralApiKey,
+  azureApiKey,
+  setAzureApiKey,
+  azureEndpoint,
+  setAzureEndpoint,
+  azureDeploymentName,
+  setAzureDeploymentName,
   customTranscriptionApiKey,
   setCustomTranscriptionApiKey,
   cloudTranscriptionBaseUrl,
@@ -345,6 +357,12 @@ function TranscriptionSection({
       setGroqApiKey={setGroqApiKey}
       mistralApiKey={mistralApiKey}
       setMistralApiKey={setMistralApiKey}
+      azureApiKey={azureApiKey}
+      setAzureApiKey={setAzureApiKey}
+      azureEndpoint={azureEndpoint}
+      setAzureEndpoint={setAzureEndpoint}
+      azureDeploymentName={azureDeploymentName}
+      setAzureDeploymentName={setAzureDeploymentName}
       customTranscriptionApiKey={customTranscriptionApiKey}
       setCustomTranscriptionApiKey={setCustomTranscriptionApiKey}
       cloudTranscriptionBaseUrl={cloudTranscriptionBaseUrl}
@@ -416,6 +434,12 @@ interface AiModelsSectionProps {
   setGeminiApiKey: (key: string) => void;
   groqApiKey: string;
   setGroqApiKey: (key: string) => void;
+  azureApiKey: string;
+  setAzureApiKey: (key: string) => void;
+  azureEndpoint: string;
+  setAzureEndpoint: (endpoint: string) => void;
+  azureDeploymentName: string;
+  setAzureDeploymentName: (name: string) => void;
   customReasoningApiKey: string;
   setCustomReasoningApiKey: (key: string) => void;
   reasoningMode: InferenceMode;
@@ -450,6 +474,12 @@ function AiModelsSection({
   setGeminiApiKey,
   groqApiKey,
   setGroqApiKey,
+  azureApiKey,
+  setAzureApiKey,
+  azureEndpoint,
+  setAzureEndpoint,
+  azureDeploymentName,
+  setAzureDeploymentName,
   customReasoningApiKey,
   setCustomReasoningApiKey,
   reasoningMode,
@@ -525,6 +555,12 @@ function AiModelsSection({
       setGeminiApiKey={setGeminiApiKey}
       groqApiKey={groqApiKey}
       setGroqApiKey={setGroqApiKey}
+      azureApiKey={azureApiKey}
+      setAzureApiKey={setAzureApiKey}
+      azureEndpoint={azureEndpoint}
+      setAzureEndpoint={setAzureEndpoint}
+      azureDeploymentName={azureDeploymentName}
+      setAzureDeploymentName={setAzureDeploymentName}
       customReasoningApiKey={customReasoningApiKey}
       setCustomReasoningApiKey={setCustomReasoningApiKey}
       mode={mode}
@@ -677,6 +713,9 @@ export default function SettingsPage({
     geminiApiKey,
     groqApiKey,
     mistralApiKey,
+    azureApiKey,
+    azureEndpoint,
+    azureDeploymentName,
     dictationKey,
     activationMode,
     setActivationMode,
@@ -701,6 +740,9 @@ export default function SettingsPage({
     setGeminiApiKey,
     setGroqApiKey,
     setMistralApiKey,
+    setAzureApiKey,
+    setAzureEndpoint,
+    setAzureDeploymentName,
     customTranscriptionApiKey,
     setCustomTranscriptionApiKey,
     customReasoningApiKey,
@@ -3130,6 +3172,12 @@ EOF`,
             setGroqApiKey={setGroqApiKey}
             mistralApiKey={mistralApiKey}
             setMistralApiKey={setMistralApiKey}
+            azureApiKey={azureApiKey}
+            setAzureApiKey={setAzureApiKey}
+            azureEndpoint={azureEndpoint}
+            setAzureEndpoint={setAzureEndpoint}
+            azureDeploymentName={azureDeploymentName}
+            setAzureDeploymentName={setAzureDeploymentName}
             customTranscriptionApiKey={customTranscriptionApiKey}
             setCustomTranscriptionApiKey={setCustomTranscriptionApiKey}
             cloudTranscriptionBaseUrl={cloudTranscriptionBaseUrl}
@@ -3169,6 +3217,12 @@ EOF`,
             setGeminiApiKey={setGeminiApiKey}
             groqApiKey={groqApiKey}
             setGroqApiKey={setGroqApiKey}
+            azureApiKey={azureApiKey}
+            setAzureApiKey={setAzureApiKey}
+            azureEndpoint={azureEndpoint}
+            setAzureEndpoint={setAzureEndpoint}
+            azureDeploymentName={azureDeploymentName}
+            setAzureDeploymentName={setAzureDeploymentName}
             customReasoningApiKey={customReasoningApiKey}
             setCustomReasoningApiKey={setCustomReasoningApiKey}
             reasoningMode={reasoningMode}
@@ -3314,6 +3368,12 @@ EOF`,
               setGeminiApiKey={setGeminiApiKey}
               groqApiKey={groqApiKey}
               setGroqApiKey={setGroqApiKey}
+              azureApiKey={azureApiKey}
+              setAzureApiKey={setAzureApiKey}
+              azureEndpoint={azureEndpoint}
+              setAzureEndpoint={setAzureEndpoint}
+              azureDeploymentName={azureDeploymentName}
+              setAzureDeploymentName={setAzureDeploymentName}
               customReasoningApiKey={customReasoningApiKey}
               setCustomReasoningApiKey={setCustomReasoningApiKey}
               reasoningMode={reasoningMode}

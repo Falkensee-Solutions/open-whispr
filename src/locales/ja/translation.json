@@ -1510,7 +1510,8 @@
         "openai_whisper_1": "オリジナル Whisper モデル",
         "groq_whisper_large_v3_turbo": "リアルタイムの 216 倍速",
         "groq_whisper_large_v3": "Large v3 モデル、高速かつ高精度",
-        "mistral_voxtral_mini_latest": "高速多言語文字起こし"
+        "mistral_voxtral_mini_latest": "高速多言語文字起こし",
+        "azure_whisper": "Azure OpenAI Whisperデプロイメント"
       },
       "cloud": {
         "openai_gpt_5_4": "複雑な推論のためのフロンティアモデル",
@@ -1534,7 +1535,8 @@
         "groq_llama_4_scout": "Meta の効率的マルチモーダル、750 T/秒",
         "groq_compound": "Groq の Compound システム、450 T/秒",
         "groq_compound_mini": "高速 Compound システム、3x 低レイテンシー",
-        "groq_kimi_k2_0905": "Moonshot AI 1T MoE、256K コンテキスト"
+        "groq_kimi_k2_0905": "Moonshot AI 1T MoE、256K コンテキスト",
+        "azure_deployment": "Azure OpenAIデプロイメント"
       },
       "local": {
         "qwen_qwen3_5_9b_q4_k_m": "強力なハイブリッドモデル",
@@ -2280,5 +2282,9 @@
     "copy": "コピー",
     "copied": "コピー済み",
     "waitingForInput": "何か話してください..."
+  },
+  "azure": {
+    "endpointPlaceholder": "Azureエンドポイント（例: https://myresource.openai.azure.com）",
+    "deploymentPlaceholder": "デプロイメント名（例: gpt-4o）"
   }
 }

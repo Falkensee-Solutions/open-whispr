@@ -1505,7 +1505,8 @@
         "openai_whisper_1": "原始 Whisper 模型",
         "groq_whisper_large_v3_turbo": "216 倍实时速度",
         "groq_whisper_large_v3": "Large v3 模型，快速且精准",
-        "mistral_voxtral_mini_latest": "快速多语言转录"
+        "mistral_voxtral_mini_latest": "快速多语言转录",
+        "azure_whisper": "Azure OpenAI Whisper 部署"
       },
       "cloud": {
         "openai_gpt_5_4": "复杂推理前沿模型",
@@ -1529,7 +1530,8 @@
         "groq_llama_4_scout": "Meta 高效多模态，750 T/秒",
         "groq_compound": "Groq Compound 系统，450 T/秒",
         "groq_compound_mini": "快速 Compound 系统，3x 更低延迟",
-        "groq_kimi_k2_0905": "Moonshot AI 1T MoE，256K 上下文"
+        "groq_kimi_k2_0905": "Moonshot AI 1T MoE，256K 上下文",
+        "azure_deployment": "您的 Azure OpenAI 部署"
       },
       "local": {
         "qwen_qwen3_5_9b_q4_k_m": "强大的混合模型",
@@ -2275,5 +2277,9 @@
     "copy": "复制",
     "copied": "已复制",
     "waitingForInput": "说点什么..."
+  },
+  "azure": {
+    "endpointPlaceholder": "Azure 终结点（例如 https://myresource.openai.azure.com）",
+    "deploymentPlaceholder": "部署名称（例如 gpt-4o）"
   }
 }

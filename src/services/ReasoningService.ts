@@ -248,7 +248,7 @@ class ReasoningService extends BaseReasoningService {
   }
 
   private async getApiKey(
-    provider: "openai" | "anthropic" | "gemini" | "groq" | "custom"
+    provider: "openai" | "anthropic" | "gemini" | "groq" | "custom" | "azure"
   ): Promise<string> {
     if (provider === "custom") {
       let customKey = "";
@@ -286,6 +286,7 @@ class ReasoningService extends BaseReasoningService {
           anthropic: () => window.electronAPI.getAnthropicKey(),
           gemini: () => window.electronAPI.getGeminiKey(),
           groq: () => window.electronAPI.getGroqKey(),
+          azure: () => window.electronAPI.getAzureKey(),
         };
         apiKey = (await keyGetters[provider]()) ?? undefined;
 
@@ -522,6 +523,9 @@ class ReasoningService extends BaseReasoningService {
             break;
           case "custom":
             result = await this.processWithOpenAI(text, trimmedModel, agentName, config);
+            break;
+          case "azure":
+            result = await this.processWithAzure(text, trimmedModel, agentName, config);
             break;
           default:
             throw new Error(`Unsupported reasoning provider: ${provider}`);
@@ -1121,6 +1125,127 @@ class ReasoningService extends BaseReasoningService {
       );
     } catch (error) {
       logger.logReasoning("GROQ_ERROR", {
+        model,
+        error: (error as Error).message,
+        errorType: (error as Error).name,
+      });
+      throw error;
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+
+  private async processWithAzure(
+    text: string,
+    model: string,
+    agentName: string | null = null,
+    config: ReasoningConfig = {}
+  ): Promise<string> {
+    logger.logReasoning("AZURE_START", { model, agentName });
+
+    if (this.isProcessing) {
+      throw new Error("Already processing a request");
+    }
+
+    const apiKey = await this.getApiKey("azure");
+    const settings = getSettings();
+    const azureEndpoint = (settings as any).azureEndpoint || "";
+    const azureDeploymentName = (settings as any).azureDeploymentName || "";
+
+    if (!azureEndpoint) {
+      throw new Error("Azure endpoint is not configured. Please set it in Settings.");
+    }
+
+    this.isProcessing = true;
+
+    try {
+      const baseUrl = azureEndpoint.replace(/\/+$/, "");
+      const deployment = azureDeploymentName || model;
+      const endpoint = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=2025-01-01`;
+
+      const systemPrompt = config.systemPrompt || this.getSystemPrompt(agentName, text);
+      const messages = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: text },
+      ];
+
+      const requestBody: any = {
+        messages,
+        temperature: config.temperature ?? 0.3,
+        max_tokens:
+          config.maxTokens ||
+          Math.max(
+            4096,
+            this.calculateMaxTokens(
+              text.length,
+              TOKEN_LIMITS.MIN_TOKENS,
+              TOKEN_LIMITS.MAX_TOKENS,
+              TOKEN_LIMITS.TOKEN_MULTIPLIER
+            )
+          ),
+      };
+
+      logger.logReasoning("AZURE_REQUEST", {
+        endpoint,
+        deployment,
+        hasApiKey: !!apiKey,
+      });
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": apiKey,
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          let errorData: any = { error: response.statusText };
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { error: errorText || response.statusText };
+          }
+          const errorMessage =
+            errorData.error?.message ||
+            errorData.message ||
+            errorData.error ||
+            `Azure API error: ${response.status}`;
+          throw new Error(errorMessage);
+        }
+
+        const jsonResponse = await response.json();
+
+        if (!jsonResponse.choices || !jsonResponse.choices[0]) {
+          throw new Error("Invalid response structure from Azure API");
+        }
+
+        const responseText = jsonResponse.choices[0].message?.content?.trim() || "";
+
+        if (!responseText) {
+          throw new Error("Azure returned empty response");
+        }
+
+        logger.logReasoning("AZURE_RESPONSE", {
+          deployment,
+          responseLength: responseText.length,
+          tokensUsed: jsonResponse.usage?.total_tokens || 0,
+          success: true,
+        });
+
+        return responseText;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    } catch (error) {
+      logger.logReasoning("AZURE_ERROR", {
         model,
         error: (error as Error).message,
         errorType: (error as Error).name,
@@ -1748,7 +1873,7 @@ class ReasoningService extends BaseReasoningService {
   }
 
   clearApiKeyCache(
-    provider?: "openai" | "anthropic" | "gemini" | "groq" | "mistral" | "custom"
+    provider?: "openai" | "anthropic" | "gemini" | "groq" | "mistral" | "azure" | "custom"
   ): void {
     if (provider) {
       if (provider !== "custom") {

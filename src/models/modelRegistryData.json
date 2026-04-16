@@ -178,6 +178,19 @@
           "descriptionKey": "models.descriptions.transcription.mistral_voxtral_mini_latest"
         }
       ]
+    },
+    {
+      "id": "azure",
+      "name": "Azure",
+      "baseUrl": "",
+      "models": [
+        {
+          "id": "whisper",
+          "name": "Whisper",
+          "description": "Azure OpenAI Whisper deployment",
+          "descriptionKey": "models.descriptions.transcription.azure_whisper"
+        }
+      ]
     }
   ],
   "cloudProviders": [
@@ -349,6 +362,20 @@
           "name": "Kimi K2 0905",
           "description": "Moonshot AI's 1T MoE, 256K context",
           "descriptionKey": "models.descriptions.cloud.groq_kimi_k2_0905"
+        }
+      ]
+    },
+    {
+      "id": "azure",
+      "name": "Azure",
+      "models": [
+        {
+          "id": "azure-deployment",
+          "name": "Azure Deployment",
+          "description": "Your Azure OpenAI deployment",
+          "descriptionKey": "models.descriptions.cloud.azure_deployment",
+          "tokenParam": "max_tokens",
+          "supportsTemperature": true
         }
       ]
     }

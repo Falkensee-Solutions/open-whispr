@@ -1510,7 +1510,8 @@
         "openai_whisper_1": "Оригинальная модель Whisper",
         "groq_whisper_large_v3_turbo": "Скорость в 216 раз быстрее реального времени",
         "groq_whisper_large_v3": "Модель Large v3, быстрая и точная",
-        "mistral_voxtral_mini_latest": "Быстрая многоязычная транскрипция"
+        "mistral_voxtral_mini_latest": "Быстрая многоязычная транскрипция",
+        "azure_whisper": "Развёртывание Azure OpenAI Whisper"
       },
       "cloud": {
         "openai_gpt_5_4": "Фронтирная модель для сложного рассуждения",
@@ -1534,7 +1535,8 @@
         "groq_llama_4_scout": "Эффективная мультимодальная Meta, 750 т/с",
         "groq_compound": "Система Compound от Groq, 450 т/с",
         "groq_compound_mini": "Быстрая система Compound, 3x ниже задержка",
-        "groq_kimi_k2_0905": "Moonshot AI 1T MoE, контекст 256K"
+        "groq_kimi_k2_0905": "Moonshot AI 1T MoE, контекст 256K",
+        "azure_deployment": "Ваше развёртывание Azure OpenAI"
       },
       "local": {
         "qwen_qwen3_5_9b_q4_k_m": "Мощная гибридная модель",
@@ -2280,5 +2282,9 @@
     "copy": "Копировать",
     "copied": "Скопировано",
     "waitingForInput": "Скажите что-нибудь..."
+  },
+  "azure": {
+    "endpointPlaceholder": "Конечная точка Azure (напр., https://myresource.openai.azure.com)",
+    "deploymentPlaceholder": "Имя развёртывания (напр., gpt-4o)"
   }
 }

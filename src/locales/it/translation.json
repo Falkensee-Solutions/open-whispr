@@ -1510,7 +1510,8 @@
         "openai_whisper_1": "Modello Whisper originale",
         "groq_whisper_large_v3_turbo": "Velocità 216x in tempo reale",
         "groq_whisper_large_v3": "Modello Large v3, veloce e preciso",
-        "mistral_voxtral_mini_latest": "Trascrizione multilingue veloce"
+        "mistral_voxtral_mini_latest": "Trascrizione multilingue veloce",
+        "azure_whisper": "Distribuzione Azure OpenAI Whisper"
       },
       "cloud": {
         "openai_gpt_5_4": "Modello frontier per ragionamento complesso",
@@ -1534,7 +1535,8 @@
         "groq_llama_4_scout": "Multimodale efficiente di Meta, 750 T/sec",
         "groq_compound": "Sistema compound di Groq, 450 T/sec",
         "groq_compound_mini": "Sistema compound veloce, 3x latenza ridotta",
-        "groq_kimi_k2_0905": "Moonshot AI 1T MoE, contesto 256K"
+        "groq_kimi_k2_0905": "Moonshot AI 1T MoE, contesto 256K",
+        "azure_deployment": "La tua distribuzione Azure OpenAI"
       },
       "local": {
         "qwen_qwen3_5_9b_q4_k_m": "Modello ibrido potente",
@@ -2280,5 +2282,9 @@
     "copy": "Copia",
     "copied": "Copiato",
     "waitingForInput": "Di qualcosa..."
+  },
+  "azure": {
+    "endpointPlaceholder": "Endpoint Azure (es., https://myresource.openai.azure.com)",
+    "deploymentPlaceholder": "Nome distribuzione (es., gpt-4o)"
   }
 }

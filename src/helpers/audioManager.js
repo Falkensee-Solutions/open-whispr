@@ -23,6 +23,7 @@ const PLACEHOLDER_KEYS = {
   openai: "your_openai_api_key_here",
   groq: "your_groq_api_key_here",
   mistral: "your_mistral_api_key_here",
+  azure: "your_azure_api_key_here",
 };
 
 const isValidApiKey = (key, provider = "openai") => {
@@ -853,6 +854,18 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         err.code = "API_KEY_MISSING";
         throw err;
       }
+    } else if (provider === "azure") {
+      apiKey = s.azureApiKey;
+      if (!isValidApiKey(apiKey, "azure")) {
+        apiKey = await window.electronAPI.getAzureKey?.();
+      }
+      if (!isValidApiKey(apiKey, "azure")) {
+        const err = new Error(
+          "Azure API key not found. Please set your API key in the Control Panel."
+        );
+        err.code = "API_KEY_MISSING";
+        throw err;
+      }
     } else {
       // Default to OpenAI
       // Prefer store value (user-entered via UI) over main process (.env)
@@ -1491,7 +1504,11 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
       // Build headers - only include Authorization if we have an API key
       const headers = {};
       if (apiKey) {
-        headers.Authorization = `Bearer ${apiKey}`;
+        if (provider === "azure") {
+          headers["api-key"] = apiKey;
+        } else {
+          headers.Authorization = `Bearer ${apiKey}`;
+        }
       }
 
       logger.debug(
@@ -1752,12 +1769,21 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
     try {
       // Use custom URL only when provider is "custom", otherwise use provider-specific defaults
       let base;
+      let azureFullEndpoint = null;
       if (isCustomEndpoint) {
         base = currentBaseUrl.trim() || API_ENDPOINTS.TRANSCRIPTION_BASE;
       } else if (currentProvider === "groq") {
         base = API_ENDPOINTS.GROQ_BASE;
       } else if (currentProvider === "mistral") {
         base = API_ENDPOINTS.MISTRAL_BASE;
+      } else if (currentProvider === "azure") {
+        const azureEndpoint = s.azureEndpoint || "";
+        const azureDeploymentName = s.azureDeploymentName || "";
+        if (azureEndpoint && azureDeploymentName) {
+          const azureBase = azureEndpoint.replace(/\/+$/, "");
+          azureFullEndpoint = `${azureBase}/openai/deployments/${azureDeploymentName}/audio/transcriptions?api-version=2025-01-01`;
+        }
+        base = API_ENDPOINTS.TRANSCRIPTION_BASE;
       } else {
         // OpenAI or other standard providers
         base = API_ENDPOINTS.TRANSCRIPTION_BASE;
@@ -1795,6 +1821,10 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
 
         return endpoint;
       };
+
+      if (azureFullEndpoint) {
+        return cacheResult(azureFullEndpoint);
+      }
 
       if (!normalizedBase) {
         logger.debug(

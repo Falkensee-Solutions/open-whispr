@@ -32,7 +32,7 @@ type CloudModelOption = {
   invertInDark?: boolean;
 };
 
-const CLOUD_PROVIDER_IDS = ["openai", "anthropic", "gemini", "groq", "custom"];
+const CLOUD_PROVIDER_IDS = ["openai", "anthropic", "gemini", "groq", "azure", "custom"];
 
 interface ReasoningModelSelectorProps {
   reasoningModel: string;
@@ -49,6 +49,12 @@ interface ReasoningModelSelectorProps {
   setGeminiApiKey: (key: string) => void;
   groqApiKey: string;
   setGroqApiKey: (key: string) => void;
+  azureApiKey: string;
+  setAzureApiKey: (key: string) => void;
+  azureEndpoint: string;
+  setAzureEndpoint: (endpoint: string) => void;
+  azureDeploymentName: string;
+  setAzureDeploymentName: (name: string) => void;
   customReasoningApiKey?: string;
   setCustomReasoningApiKey?: (key: string) => void;
   mode?: "cloud" | "local";
@@ -320,6 +326,12 @@ export default function ReasoningModelSelector({
   setGeminiApiKey,
   groqApiKey,
   setGroqApiKey,
+  azureApiKey,
+  setAzureApiKey,
+  azureEndpoint,
+  setAzureEndpoint,
+  azureDeploymentName,
+  setAzureDeploymentName,
   customReasoningApiKey = "",
   setCustomReasoningApiKey,
   mode,
@@ -962,6 +974,41 @@ export default function ReasoningModelSelector({
                       setApiKey={setGroqApiKey}
                       label=""
                       helpText=""
+                    />
+                  </div>
+                )}
+
+                {selectedCloudProvider === "azure" && (
+                  <div className="space-y-3">
+                    <div className="flex items-baseline justify-between">
+                      <h4 className="font-medium text-foreground">{t("common.apiKey")}</h4>
+                      <a
+                        href="https://portal.azure.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={createExternalLinkHandler("https://portal.azure.com")}
+                        className="text-xs text-link underline decoration-link/30 hover:decoration-link/60 cursor-pointer transition-colors"
+                      >
+                        {t("reasoning.getApiKey")}
+                      </a>
+                    </div>
+                    <ApiKeyInput
+                      apiKey={azureApiKey}
+                      setApiKey={setAzureApiKey}
+                      label=""
+                      helpText=""
+                    />
+                    <Input
+                      placeholder={t("azure.endpointPlaceholder")}
+                      value={azureEndpoint}
+                      onChange={(e) => setAzureEndpoint(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                    <Input
+                      placeholder={t("azure.deploymentPlaceholder")}
+                      value={azureDeploymentName}
+                      onChange={(e) => setAzureDeploymentName(e.target.value)}
+                      className="h-8 text-sm"
                     />
                   </div>
                 )}

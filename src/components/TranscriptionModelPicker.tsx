@@ -194,6 +194,12 @@ interface TranscriptionModelPickerProps {
   setGroqApiKey: (key: string) => void;
   mistralApiKey: string;
   setMistralApiKey: (key: string) => void;
+  azureApiKey: string;
+  setAzureApiKey: (key: string) => void;
+  azureEndpoint: string;
+  setAzureEndpoint: (endpoint: string) => void;
+  azureDeploymentName: string;
+  setAzureDeploymentName: (name: string) => void;
   customTranscriptionApiKey?: string;
   setCustomTranscriptionApiKey?: (key: string) => void;
   cloudTranscriptionBaseUrl?: string;
@@ -207,6 +213,7 @@ const CLOUD_PROVIDER_TABS = [
   { id: "openai", name: "OpenAI" },
   { id: "groq", name: "Groq" },
   { id: "mistral", name: "Mistral" },
+  { id: "azure", name: "Azure" },
   { id: "custom", name: "Custom" },
 ];
 
@@ -270,6 +277,12 @@ export default function TranscriptionModelPicker({
   setGroqApiKey,
   mistralApiKey,
   setMistralApiKey,
+  azureApiKey,
+  setAzureApiKey,
+  azureEndpoint,
+  setAzureEndpoint,
+  azureDeploymentName,
+  setAzureDeploymentName,
   customTranscriptionApiKey = "",
   setCustomTranscriptionApiKey,
   cloudTranscriptionBaseUrl = "",
@@ -869,6 +882,7 @@ export default function TranscriptionModelPicker({
                           groq: "https://console.groq.com/keys",
                           mistral: "https://console.mistral.ai/api-keys",
                           openai: "https://platform.openai.com/api-keys",
+                          azure: "https://portal.azure.com",
                         }[selectedCloudProvider] || "https://platform.openai.com/api-keys"
                       )}
                       className="text-xs text-primary/70 hover:text-primary transition-colors cursor-pointer"
@@ -878,18 +892,34 @@ export default function TranscriptionModelPicker({
                   </div>
                   <ApiKeyInput
                     apiKey={
-                      { groq: groqApiKey, mistral: mistralApiKey, openai: openaiApiKey }[
+                      { groq: groqApiKey, mistral: mistralApiKey, openai: openaiApiKey, azure: azureApiKey }[
                         selectedCloudProvider
                       ] || openaiApiKey
                     }
                     setApiKey={
-                      { groq: setGroqApiKey, mistral: setMistralApiKey, openai: setOpenaiApiKey }[
+                      { groq: setGroqApiKey, mistral: setMistralApiKey, openai: setOpenaiApiKey, azure: setAzureApiKey }[
                         selectedCloudProvider
                       ] || setOpenaiApiKey
                     }
                     label=""
                     helpText=""
                   />
+                  {selectedCloudProvider === "azure" && (
+                    <div className="space-y-2 mt-2">
+                      <Input
+                        placeholder={t("azure.endpointPlaceholder")}
+                        value={azureEndpoint}
+                        onChange={(e) => setAzureEndpoint(e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        placeholder={t("azure.deploymentPlaceholder")}
+                        value={azureDeploymentName}
+                        onChange={(e) => setAzureDeploymentName(e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">

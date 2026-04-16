@@ -826,6 +826,14 @@ declare global {
         contextBias?: string[];
       }) => Promise<{ text: string }>;
 
+      // Azure OpenAI management
+      getAzureKey: () => Promise<string | null>;
+      saveAzureKey: (key: string) => Promise<void>;
+      getAzureEndpoint: () => Promise<string | null>;
+      saveAzureEndpoint: (endpoint: string) => Promise<void>;
+      getAzureDeploymentName: () => Promise<string | null>;
+      saveAzureDeploymentName: (name: string) => Promise<void>;
+
       // Custom endpoint API keys
       getCustomTranscriptionKey?: () => Promise<string | null>;
       saveCustomTranscriptionKey?: (key: string) => Promise<void>;

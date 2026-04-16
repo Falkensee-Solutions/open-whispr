@@ -54,6 +54,9 @@ export interface ApiKeySettings {
   geminiApiKey: string;
   groqApiKey: string;
   mistralApiKey: string;
+  azureApiKey: string;
+  azureEndpoint: string;
+  azureDeploymentName: string;
   customTranscriptionApiKey: string;
   customReasoningApiKey: string;
 }
@@ -205,6 +208,9 @@ function useSettingsInternal() {
     geminiApiKey: store.geminiApiKey,
     groqApiKey: store.groqApiKey,
     mistralApiKey: store.mistralApiKey,
+    azureApiKey: store.azureApiKey,
+    azureEndpoint: store.azureEndpoint,
+    azureDeploymentName: store.azureDeploymentName,
     dictationKey: store.dictationKey,
     meetingKey: store.meetingKey,
     theme: store.theme,
@@ -238,6 +244,9 @@ function useSettingsInternal() {
     setGeminiApiKey: store.setGeminiApiKey,
     setGroqApiKey: store.setGroqApiKey,
     setMistralApiKey: store.setMistralApiKey,
+    setAzureApiKey: store.setAzureApiKey,
+    setAzureEndpoint: store.setAzureEndpoint,
+    setAzureDeploymentName: store.setAzureDeploymentName,
     customTranscriptionApiKey: store.customTranscriptionApiKey,
     setCustomTranscriptionApiKey: store.setCustomTranscriptionApiKey,
     customReasoningApiKey: store.customReasoningApiKey,

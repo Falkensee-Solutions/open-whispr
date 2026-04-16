@@ -2247,6 +2247,30 @@ class IPCHandlers {
       return this.environmentManager.saveMistralKey(key);
     });
 
+    ipcMain.handle("get-azure-key", async () => {
+      return this.environmentManager.getAzureKey();
+    });
+
+    ipcMain.handle("save-azure-key", async (event, key) => {
+      return this.environmentManager.saveAzureKey(key);
+    });
+
+    ipcMain.handle("get-azure-endpoint", async () => {
+      return this.environmentManager.getAzureEndpoint();
+    });
+
+    ipcMain.handle("save-azure-endpoint", async (event, endpoint) => {
+      return this.environmentManager.saveAzureEndpoint(endpoint);
+    });
+
+    ipcMain.handle("get-azure-deployment-name", async () => {
+      return this.environmentManager.getAzureDeploymentName();
+    });
+
+    ipcMain.handle("save-azure-deployment-name", async (event, name) => {
+      return this.environmentManager.saveAzureDeploymentName(name);
+    });
+
     ipcMain.handle(
       "proxy-mistral-transcription",
       async (event, { audioBuffer, model, language, contextBias }) => {

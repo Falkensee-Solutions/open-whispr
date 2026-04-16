@@ -116,6 +116,12 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
     setGroqApiKey,
     mistralApiKey,
     setMistralApiKey,
+    azureApiKey,
+    setAzureApiKey,
+    azureEndpoint,
+    setAzureEndpoint,
+    azureDeploymentName,
+    setAzureDeploymentName,
     customTranscriptionApiKey,
     setCustomTranscriptionApiKey,
     updateTranscriptionSettings,
@@ -532,6 +538,12 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
         setGroqApiKey={setGroqApiKey}
         mistralApiKey={mistralApiKey}
         setMistralApiKey={setMistralApiKey}
+        azureApiKey={azureApiKey}
+        setAzureApiKey={setAzureApiKey}
+        azureEndpoint={azureEndpoint}
+        setAzureEndpoint={setAzureEndpoint}
+        azureDeploymentName={azureDeploymentName}
+        setAzureDeploymentName={setAzureDeploymentName}
         customTranscriptionApiKey={customTranscriptionApiKey}
         setCustomTranscriptionApiKey={setCustomTranscriptionApiKey}
         cloudTranscriptionBaseUrl={cloudTranscriptionBaseUrl}

@@ -227,6 +227,9 @@ export interface SettingsState
   setGeminiApiKey: (key: string) => void;
   setGroqApiKey: (key: string) => void;
   setMistralApiKey: (key: string) => void;
+  setAzureApiKey: (key: string) => void;
+  setAzureEndpoint: (endpoint: string) => void;
+  setAzureDeploymentName: (name: string) => void;
   setCustomTranscriptionApiKey: (key: string) => void;
   setCustomReasoningApiKey: (key: string) => void;
 
@@ -310,7 +313,7 @@ function debouncedPersistToEnv() {
 }
 
 function invalidateApiKeyCaches(
-  provider?: "openai" | "anthropic" | "gemini" | "groq" | "mistral" | "custom"
+  provider?: "openai" | "anthropic" | "gemini" | "groq" | "mistral" | "azure" | "custom"
 ) {
   if (provider) {
     if (_ReasoningService) {
@@ -364,6 +367,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   geminiApiKey: readString("geminiApiKey", ""),
   groqApiKey: readString("groqApiKey", ""),
   mistralApiKey: readString("mistralApiKey", ""),
+  azureApiKey: readString("azureApiKey", ""),
+  azureEndpoint: readString("azureEndpoint", ""),
+  azureDeploymentName: readString("azureDeploymentName", ""),
   customTranscriptionApiKey: readString("customTranscriptionApiKey", ""),
   customReasoningApiKey: readString("customReasoningApiKey", ""),
 
@@ -575,6 +581,22 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     set({ mistralApiKey: key });
     window.electronAPI?.saveMistralKey?.(key);
     invalidateApiKeyCaches("mistral");
+  },
+  setAzureApiKey: (key: string) => {
+    if (isBrowser) localStorage.setItem("azureApiKey", key);
+    set({ azureApiKey: key });
+    window.electronAPI?.saveAzureKey?.(key);
+    invalidateApiKeyCaches("azure");
+  },
+  setAzureEndpoint: (endpoint: string) => {
+    if (isBrowser) localStorage.setItem("azureEndpoint", endpoint);
+    set({ azureEndpoint: endpoint });
+    window.electronAPI?.saveAzureEndpoint?.(endpoint);
+  },
+  setAzureDeploymentName: (name: string) => {
+    if (isBrowser) localStorage.setItem("azureDeploymentName", name);
+    set({ azureDeploymentName: name });
+    window.electronAPI?.saveAzureDeploymentName?.(name);
   },
   setCustomTranscriptionApiKey: (key: string) => {
     if (isBrowser) localStorage.setItem("customTranscriptionApiKey", key);
@@ -813,6 +835,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (keys.geminiApiKey !== undefined) s.setGeminiApiKey(keys.geminiApiKey);
     if (keys.groqApiKey !== undefined) s.setGroqApiKey(keys.groqApiKey);
     if (keys.mistralApiKey !== undefined) s.setMistralApiKey(keys.mistralApiKey);
+    if (keys.azureApiKey !== undefined) s.setAzureApiKey(keys.azureApiKey);
+    if (keys.azureEndpoint !== undefined) s.setAzureEndpoint(keys.azureEndpoint);
+    if (keys.azureDeploymentName !== undefined) s.setAzureDeploymentName(keys.azureDeploymentName);
     if (keys.customTranscriptionApiKey !== undefined)
       s.setCustomTranscriptionApiKey(keys.customTranscriptionApiKey);
     if (keys.customReasoningApiKey !== undefined)
@@ -898,6 +923,18 @@ export async function initializeSettings(): Promise<void> {
       if (!state.mistralApiKey) {
         const envKey = await window.electronAPI.getMistralKey?.();
         if (envKey) createStringSetter("mistralApiKey")(envKey);
+      }
+      if (!state.azureApiKey) {
+        const envKey = await window.electronAPI.getAzureKey?.();
+        if (envKey) createStringSetter("azureApiKey")(envKey);
+      }
+      if (!state.azureEndpoint) {
+        const envEndpoint = await window.electronAPI.getAzureEndpoint?.();
+        if (envEndpoint) createStringSetter("azureEndpoint")(envEndpoint);
+      }
+      if (!state.azureDeploymentName) {
+        const envName = await window.electronAPI.getAzureDeploymentName?.();
+        if (envName) createStringSetter("azureDeploymentName")(envName);
       }
       if (!state.customTranscriptionApiKey) {
         const envKey = await window.electronAPI.getCustomTranscriptionKey?.();

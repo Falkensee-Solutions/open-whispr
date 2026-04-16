@@ -353,6 +353,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveMistralKey: (key) => ipcRenderer.invoke("save-mistral-key", key),
   proxyMistralTranscription: (data) => ipcRenderer.invoke("proxy-mistral-transcription", data),
 
+  // Azure API
+  getAzureKey: () => ipcRenderer.invoke("get-azure-key"),
+  saveAzureKey: (key) => ipcRenderer.invoke("save-azure-key", key),
+  getAzureEndpoint: () => ipcRenderer.invoke("get-azure-endpoint"),
+  saveAzureEndpoint: (endpoint) => ipcRenderer.invoke("save-azure-endpoint", endpoint),
+  getAzureDeploymentName: () => ipcRenderer.invoke("get-azure-deployment-name"),
+  saveAzureDeploymentName: (name) => ipcRenderer.invoke("save-azure-deployment-name", name),
+
   // Custom endpoint API keys
   getCustomTranscriptionKey: () => ipcRenderer.invoke("get-custom-transcription-key"),
   saveCustomTranscriptionKey: (key) => ipcRenderer.invoke("save-custom-transcription-key", key),
