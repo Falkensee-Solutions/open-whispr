@@ -1874,6 +1874,7 @@
     "clearAll": "全部清除",
     "howItWorks": "運作方式",
     "howItWorksDetail": "你新增的詞彙會包含在 AI 提示詞中，讓模型在轉錄整理時能辨識並保留這些詞彙。",
+    "hallucinationWarning": "注意：過多的詞彙或非常短/罕見的詞可能導致模型產生幻覺——重複字典中的詞而不是轉錄實際語音。請刪除不再需要的詞。",
     "autoManaged": "助理名稱（自動管理）",
     "inputHint": "按 Enter 新增",
     "title": "自訂字典",

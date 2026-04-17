@@ -1993,6 +1993,7 @@
     "clearAll": "Tout effacer",
     "howItWorks": "Comment ça marche",
     "howItWorksDetail": "Les mots sont transmis comme indices contextuels au modèle vocal, l'aidant à reconnaître les termes peu courants. Pour les mots difficiles, essayez d'ajouter du contexte comme « Le mot est Synty » en plus du mot lui-même.",
+    "hallucinationWarning": "Attention : Trop de mots ou des termes très courts/inhabituels peuvent amener le modèle à halluciner — répétant les mots du dictionnaire au lieu de transcrire la parole réelle. Supprimez les mots dont vous n'avez plus besoin.",
     "autoManaged": "Géré automatiquement — synchronisé depuis le nom de l'agent",
     "inputHint": "Séparez les mots par des virgules. Ajoutez des phrases de contexte comme « Le mot est Synty » pour une meilleure reconnaissance."
   },

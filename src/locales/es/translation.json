@@ -1927,6 +1927,7 @@
     "clearAll": "Borrar todo",
     "howItWorks": "Cómo funciona",
     "howItWorksDetail": "Las palabras que agregas se incluyen en el prompt de IA para que el modelo las reconozca y preserve durante la corrección de transcripción.",
+    "hallucinationWarning": "Precaución: Demasiadas palabras o términos muy cortos/inusuales pueden hacer que el modelo alucine — repitiendo palabras del diccionario en lugar de transcribir el habla real. Elimina las palabras que ya no necesites.",
     "autoManaged": "Nombre del agente (gestionado automáticamente)",
     "inputHint": "Pulsa Enter para agregar",
     "title": "Diccionario personalizado",

@@ -1879,6 +1879,7 @@
     "clearAll": "Cancella tutto",
     "howItWorks": "Come funziona",
     "howItWorksDetail": "Le parole aggiunte vengono incluse nel prompt dell'IA, in modo che il modello sappia cercare e preservare questi termini durante la correzione della trascrizione.",
+    "hallucinationWarning": "Attenzione: Troppe parole o termini molto brevi/insoliti possono causare allucinazioni del modello — ripetendo le parole del dizionario invece di trascrivere il parlato reale. Rimuovi le parole che non ti servono più.",
     "autoManaged": "Gestito automaticamente",
     "inputHint": "Premi Invio per aggiungere",
     "title": "Dizionario personalizzato",

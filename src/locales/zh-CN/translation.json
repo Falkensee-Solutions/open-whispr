@@ -1874,6 +1874,7 @@
     "clearAll": "全部清除",
     "howItWorks": "工作原理",
     "howItWorksDetail": "你添加的词汇会被包含在 AI 提示词中，以便模型在转录整理时能够识别并保留这些词汇。",
+    "hallucinationWarning": "注意：过多的词汇或非常短/罕见的词可能导致模型产生幻觉——重复字典中的词而不是转录实际语音。请删除不再需要的词。",
     "autoManaged": "助手名称（自动管理）",
     "inputHint": "按回车键添加",
     "title": "自定义词典",

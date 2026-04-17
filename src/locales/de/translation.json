@@ -1879,6 +1879,7 @@
     "clearAll": "Alle löschen",
     "howItWorks": "So funktioniert es",
     "howItWorksDetail": "Hinzugefügte Wörter werden in den KI-Prompt aufgenommen, damit das Modell diese Begriffe bei der Transkriptionsbereinigung erkennt und beibehält.",
+    "hallucinationWarning": "Achtung: Zu viele oder sehr kurze/ungewöhnliche Begriffe können dazu führen, dass das Modell halluziniert — es wiederholt dann Wörterbuchwörter, statt tatsächliche Sprache zu transkribieren. Entferne nicht mehr benötigte Wörter.",
     "autoManaged": "Agent-Name (automatisch verwaltet)",
     "inputHint": "Enter drücken zum Hinzufügen",
     "title": "Benutzerdefiniertes Wörterbuch",

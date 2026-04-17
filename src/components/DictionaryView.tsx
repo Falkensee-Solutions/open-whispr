@@ -113,6 +113,9 @@ export default function DictionaryView() {
                 <p className="text-xs text-foreground/25 leading-[1.6]">
                   {t("dictionary.howItWorksDetail")}
                 </p>
+                <p className="mt-2 text-xs text-amber-500/70 leading-[1.6]">
+                  ⚠ {t("dictionary.hallucinationWarning")}
+                </p>
               </div>
             )}
           </div>
@@ -201,11 +204,18 @@ export default function DictionaryView() {
             </div>
           </div>
 
-          <div className="px-5 pb-3 flex items-start gap-1.5">
-            <Info size={9} className="text-foreground/10 mt-px shrink-0" />
-            <p className="text-xs text-foreground/12 leading-relaxed">
-              {t("dictionary.inputHint")}
-            </p>
+          <div className="px-5 pb-3 flex flex-col gap-1.5">
+            <div className="flex items-start gap-1.5">
+              <Info size={9} className="text-foreground/10 mt-px shrink-0" />
+              <p className="text-xs text-foreground/12 leading-relaxed">
+                {t("dictionary.inputHint")}
+              </p>
+            </div>
+            {customDictionary.length > 3 && (
+              <p className="text-xs text-amber-500/50 leading-relaxed pl-[15px]">
+                ⚠ {t("dictionary.hallucinationWarning")}
+              </p>
+            )}
           </div>
         </>
       )}

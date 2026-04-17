@@ -1879,6 +1879,7 @@
     "clearAll": "Limpar tudo",
     "howItWorks": "Como funciona",
     "howItWorksDetail": "As palavras adicionadas são incluídas no prompt de IA para que o modelo saiba procurar e preservar esses termos durante a limpeza da transcrição.",
+    "hallucinationWarning": "Cuidado: Muitas palavras ou termos muito curtos/incomuns podem fazer o modelo alucinar — repetindo palavras do dicionário em vez de transcrever a fala real. Remova palavras que não são mais necessárias.",
     "autoManaged": "Gerenciado automaticamente",
     "inputHint": "Pressione Enter para adicionar",
     "title": "Dicionário personalizado",
