@@ -667,7 +667,8 @@ async function startApp() {
 
   const savedLanguageCycleKey = environmentManager.getLanguageCycleKey?.() || "";
   if (savedLanguageCycleKey) {
-    await hotkeyManager.registerSlot("languageCycle", savedLanguageCycleKey, languageCycleCallback);
+    const result = await hotkeyManager.registerSlot("languageCycle", savedLanguageCycleKey, languageCycleCallback);
+    debugLogger.info("Language cycle hotkey startup registration", { savedLanguageCycleKey, ...result }, "hotkey");
   }
 
   ipcMain.handle("register-language-cycle-hotkey", async (_event, hotkey) => {
