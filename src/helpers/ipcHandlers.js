@@ -2271,6 +2271,14 @@ class IPCHandlers {
       return this.environmentManager.saveAzureDeploymentName(name);
     });
 
+    ipcMain.handle("get-azure-reasoning-deployment-name", async () => {
+      return this.environmentManager.getAzureReasoningDeploymentName();
+    });
+
+    ipcMain.handle("save-azure-reasoning-deployment-name", async (event, name) => {
+      return this.environmentManager.saveAzureReasoningDeploymentName(name);
+    });
+
     ipcMain.handle(
       "proxy-mistral-transcription",
       async (event, { audioBuffer, model, language, contextBias }) => {

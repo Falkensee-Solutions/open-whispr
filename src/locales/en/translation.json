@@ -6,7 +6,9 @@
       "uiLabel": "Interface language",
       "uiDescription": "Choose the language used throughout OpenWhispr's interface",
       "transcriptionLabel": "Transcription language",
-      "transcriptionDescription": "Choose the language you speak for more accurate transcription"
+      "transcriptionDescription": "Choose the language you speak for more accurate transcription",
+      "quickLanguagesLabel": "Quick languages",
+      "quickLanguagesDescription": "Flag shortcuts shown on the floating icon for fast language switching"
     },
     "noteFiles": {
       "title": "Save notes as files",
@@ -1329,6 +1331,11 @@
         "description": "Start meeting mode and snap the panel to the side of the screen",
         "clear": "Remove hotkey"
       },
+      "languageCycleHotkey": {
+        "title": "Language Cycle Hotkey",
+        "description": "Cycle through your quick languages with a keyboard shortcut",
+        "clear": "Remove hotkey"
+      },
       "microphone": {
         "description": "Select which input device to use for dictation",
         "title": "Microphone"
@@ -2285,6 +2292,7 @@
   },
   "azure": {
     "endpointPlaceholder": "Azure endpoint (e.g., https://myresource.openai.azure.com)",
-    "deploymentPlaceholder": "Deployment name (e.g., gpt-4o)"
+    "deploymentPlaceholder": "Deployment name (e.g., whisper)",
+    "reasoningDeploymentPlaceholder": "Chat deployment name (e.g., gpt-4o)"
   }
 }

@@ -136,6 +136,14 @@ class EnvironmentManager {
     return this._saveKey("AZURE_DEPLOYMENT_NAME", name);
   }
 
+  getAzureReasoningDeploymentName() {
+    return this._getKey("AZURE_REASONING_DEPLOYMENT_NAME");
+  }
+
+  saveAzureReasoningDeploymentName(name) {
+    return this._saveKey("AZURE_REASONING_DEPLOYMENT_NAME", name);
+  }
+
   getCustomTranscriptionKey() {
     return this._getKey("CUSTOM_TRANSCRIPTION_API_KEY");
   }
@@ -178,6 +186,16 @@ class EnvironmentManager {
 
   saveMeetingKey(key) {
     const result = this._saveKey("MEETING_KEY", key);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
+  }
+
+  getLanguageCycleKey() {
+    return this._getKey("LANGUAGE_CYCLE_KEY");
+  }
+
+  saveLanguageCycleKey(key) {
+    const result = this._saveKey("LANGUAGE_CYCLE_KEY", key);
     this.saveAllKeysToEnvFile().catch(() => {});
     return result;
   }

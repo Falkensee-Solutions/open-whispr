@@ -29,6 +29,7 @@ import {
   BookOpen,
   Copy,
   Trash2,
+  X,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { NEON_AUTH_URL, signOut, deleteAccount } from "../lib/neonAuth";
@@ -71,7 +72,8 @@ import { Toggle } from "./ui/toggle";
 import DeveloperSection from "./DeveloperSection";
 import ApiKeysSection from "./ApiKeysSection";
 import AgentModeSettings from "./settings/AgentModeSettings";
-import LanguageSelector from "./ui/LanguageSelector";
+import LanguageSelector, { LanguageOption } from "./ui/LanguageSelector";
+import registry from "../config/languageRegistry.json";
 import { Skeleton } from "./ui/skeleton";
 import { Progress } from "./ui/progress";
 import { useToast } from "./ui/useToast";
@@ -112,7 +114,7 @@ interface SettingsPageProps {
   onNavigateToSection?: (section: SettingsSectionType) => void;
 }
 
-const UI_LANGUAGE_OPTIONS: import("./ui/LanguageSelector").LanguageOption[] = [
+const UI_LANGUAGE_OPTIONS: LanguageOption[] = [
   { value: "en", label: "English", flag: "🇺🇸" },
   { value: "es", label: "Español", flag: "🇪🇸" },
   { value: "fr", label: "Français", flag: "🇫🇷" },
@@ -440,6 +442,8 @@ interface AiModelsSectionProps {
   setAzureEndpoint: (endpoint: string) => void;
   azureDeploymentName: string;
   setAzureDeploymentName: (name: string) => void;
+  azureReasoningDeploymentName: string;
+  setAzureReasoningDeploymentName: (name: string) => void;
   customReasoningApiKey: string;
   setCustomReasoningApiKey: (key: string) => void;
   reasoningMode: InferenceMode;
@@ -480,6 +484,8 @@ function AiModelsSection({
   setAzureEndpoint,
   azureDeploymentName,
   setAzureDeploymentName,
+  azureReasoningDeploymentName,
+  setAzureReasoningDeploymentName,
   customReasoningApiKey,
   setCustomReasoningApiKey,
   reasoningMode,
@@ -561,6 +567,8 @@ function AiModelsSection({
       setAzureEndpoint={setAzureEndpoint}
       azureDeploymentName={azureDeploymentName}
       setAzureDeploymentName={setAzureDeploymentName}
+      azureReasoningDeploymentName={azureReasoningDeploymentName}
+      setAzureReasoningDeploymentName={setAzureReasoningDeploymentName}
       customReasoningApiKey={customReasoningApiKey}
       setCustomReasoningApiKey={setCustomReasoningApiKey}
       mode={mode}
@@ -716,6 +724,7 @@ export default function SettingsPage({
     azureApiKey,
     azureEndpoint,
     azureDeploymentName,
+    azureReasoningDeploymentName,
     dictationKey,
     activationMode,
     setActivationMode,
@@ -743,6 +752,7 @@ export default function SettingsPage({
     setAzureApiKey,
     setAzureEndpoint,
     setAzureDeploymentName,
+    setAzureReasoningDeploymentName,
     customTranscriptionApiKey,
     setCustomTranscriptionApiKey,
     customReasoningApiKey,
@@ -750,6 +760,8 @@ export default function SettingsPage({
     setDictationKey,
     meetingKey,
     setMeetingKey,
+    languageCycleKey,
+    setLanguageCycleKey,
     autoLearnCorrections,
     setAutoLearnCorrections,
     updateTranscriptionSettings,
@@ -799,6 +811,8 @@ export default function SettingsPage({
   } = useSettings();
 
   const agentKey = useSettingsStore((s) => s.agentKey);
+  const quickLanguages = useSettingsStore((s) => s.quickLanguages);
+  const setQuickLanguages = useSettingsStore((s) => s.setQuickLanguages);
   const meetingAudioDetection = useSettingsStore((s) => s.meetingAudioDetection);
   const setMeetingAudioDetection = useSettingsStore((s) => s.setMeetingAudioDetection);
 
@@ -968,17 +982,34 @@ export default function SettingsPage({
       registerFn: meetingRegisterFn,
     });
 
+  const langCycleRegisterFn = useCallback(async (hotkey: string) => {
+    const result = await window.electronAPI?.registerLanguageCycleHotkey?.(hotkey);
+    return result ?? { success: false, message: "Electron API unavailable" };
+  }, []);
+
+  const { registerHotkey: registerLanguageCycleHotkey, isRegistering: isLangCycleHotkeyRegistering } =
+    useHotkeyRegistration({
+      onSuccess: (registeredHotkey) => {
+        setLanguageCycleKey(registeredHotkey);
+      },
+      showSuccessToast: false,
+      showErrorToast: true,
+      showAlert: showAlertDialog,
+      registerFn: langCycleRegisterFn,
+    });
+
   const validateDictationHotkey = useCallback(
     (hotkey: string) =>
       validateHotkeyForSlot(
         hotkey,
         {
           "settingsPage.general.meetingHotkey.title": meetingKey,
+          "settingsPage.general.languageCycleHotkey.title": languageCycleKey,
           "agentMode.settings.hotkey": agentKey,
         },
         t
       ),
-    [meetingKey, agentKey, t]
+    [meetingKey, languageCycleKey, agentKey, t]
   );
 
   const validateMeetingHotkey = useCallback(
@@ -987,11 +1018,26 @@ export default function SettingsPage({
         hotkey,
         {
           "settingsPage.general.hotkey.title": dictationKey,
+          "settingsPage.general.languageCycleHotkey.title": languageCycleKey,
           "agentMode.settings.hotkey": agentKey,
         },
         t
       ),
-    [dictationKey, agentKey, t]
+    [dictationKey, languageCycleKey, agentKey, t]
+  );
+
+  const validateLanguageCycleHotkey = useCallback(
+    (hotkey: string) =>
+      validateHotkeyForSlot(
+        hotkey,
+        {
+          "settingsPage.general.hotkey.title": dictationKey,
+          "settingsPage.general.meetingHotkey.title": meetingKey,
+          "agentMode.settings.hotkey": agentKey,
+        },
+        t
+      ),
+    [dictationKey, meetingKey, agentKey, t]
   );
 
   const [isUsingNativeShortcut, setIsUsingNativeShortcut] = useState(false);
@@ -2528,6 +2574,50 @@ export default function SettingsPage({
                     />
                   </SettingsRow>
                 </SettingsPanelRow>
+                <SettingsPanelRow>
+                  <SettingsRow
+                    label={t("settings.language.quickLanguagesLabel")}
+                    description={t("settings.language.quickLanguagesDescription")}
+                  >
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {quickLanguages.map((code) => {
+                          const lang = registry.languages.find((l: { code: string }) => l.code === code);
+                          return lang ? (
+                            <span
+                              key={code}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-xs font-medium"
+                            >
+                              <span>{lang.flag}</span>
+                              <span>{lang.label}</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setQuickLanguages(quickLanguages.filter((c) => c !== code))
+                                }
+                                className="ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                                aria-label={`Remove ${lang.label}`}
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                      {quickLanguages.length < 5 && (
+                        <LanguageSelector
+                          value=""
+                          onChange={(value) => {
+                            if (value && !quickLanguages.includes(value)) {
+                              setQuickLanguages([...quickLanguages, value]);
+                            }
+                          }}
+                          className="min-w-32"
+                        />
+                      )}
+                    </div>
+                  </SettingsRow>
+                </SettingsPanelRow>
               </SettingsPanel>
             </div>
 
@@ -3144,6 +3234,38 @@ EOF`,
                 </SettingsPanelRow>
               </SettingsPanel>
             </div>
+
+            {/* Language Cycle Hotkey */}
+            <div>
+              <SectionHeader
+                title={t("settingsPage.general.languageCycleHotkey.title")}
+                description={t("settingsPage.general.languageCycleHotkey.description")}
+              />
+              <SettingsPanel>
+                <SettingsPanelRow>
+                  <HotkeyInput
+                    value={languageCycleKey}
+                    onChange={async (newHotkey) => {
+                      await registerLanguageCycleHotkey(newHotkey);
+                    }}
+                    disabled={isLangCycleHotkeyRegistering}
+                    validate={validateLanguageCycleHotkey}
+                  />
+                  {languageCycleKey && (
+                    <button
+                      onClick={async () => {
+                        await window.electronAPI?.registerLanguageCycleHotkey?.("");
+                        setLanguageCycleKey("");
+                      }}
+                      disabled={isLangCycleHotkeyRegistering}
+                      className="mt-2 text-xs text-muted-foreground/70 hover:text-foreground transition-colors disabled:opacity-50"
+                    >
+                      {t("settingsPage.general.languageCycleHotkey.clear")}
+                    </button>
+                  )}
+                </SettingsPanelRow>
+              </SettingsPanel>
+            </div>
           </div>
         );
 
@@ -3223,6 +3345,8 @@ EOF`,
             setAzureEndpoint={setAzureEndpoint}
             azureDeploymentName={azureDeploymentName}
             setAzureDeploymentName={setAzureDeploymentName}
+            azureReasoningDeploymentName={azureReasoningDeploymentName}
+            setAzureReasoningDeploymentName={setAzureReasoningDeploymentName}
             customReasoningApiKey={customReasoningApiKey}
             setCustomReasoningApiKey={setCustomReasoningApiKey}
             reasoningMode={reasoningMode}
@@ -3374,6 +3498,8 @@ EOF`,
               setAzureEndpoint={setAzureEndpoint}
               azureDeploymentName={azureDeploymentName}
               setAzureDeploymentName={setAzureDeploymentName}
+              azureReasoningDeploymentName={azureReasoningDeploymentName}
+              setAzureReasoningDeploymentName={setAzureReasoningDeploymentName}
               customReasoningApiKey={customReasoningApiKey}
               setCustomReasoningApiKey={setCustomReasoningApiKey}
               reasoningMode={reasoningMode}

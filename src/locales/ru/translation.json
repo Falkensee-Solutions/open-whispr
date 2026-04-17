@@ -6,7 +6,9 @@
       "uiLabel": "Язык интерфейса",
       "uiDescription": "Выберите язык интерфейса OpenWhispr",
       "transcriptionLabel": "Язык транскрипции",
-      "transcriptionDescription": "Выберите язык, на котором вы говорите, для более точной транскрипции"
+      "transcriptionDescription": "Выберите язык, на котором вы говорите, для более точной транскрипции",
+      "quickLanguagesLabel": "Быстрые языки",
+      "quickLanguagesDescription": "Флажки на плавающей иконке для быстрого переключения языка"
     },
     "noteFiles": {
       "title": "Сохранять заметки как файлы",
@@ -1233,6 +1235,11 @@
         "description": "Запустить режим встречи и закрепить панель сбоку экрана",
         "clear": "Удалить горячую клавишу"
       },
+      "languageCycleHotkey": {
+        "title": "Горячая клавиша смены языка",
+        "description": "Переключаться между быстрыми языками с помощью горячей клавиши",
+        "clear": "Удалить горячую клавишу"
+      },
       "microphone": {
         "description": "Выберите устройство ввода для диктовки",
         "title": "Микрофон"
@@ -2285,6 +2292,7 @@
   },
   "azure": {
     "endpointPlaceholder": "Конечная точка Azure (напр., https://myresource.openai.azure.com)",
-    "deploymentPlaceholder": "Имя развёртывания (напр., gpt-4o)"
+    "deploymentPlaceholder": "Имя развёртывания (напр., whisper)",
+    "reasoningDeploymentPlaceholder": "Имя развёртывания чата (напр., gpt-4o)"
   }
 }

@@ -833,6 +833,8 @@ declare global {
       saveAzureEndpoint: (endpoint: string) => Promise<void>;
       getAzureDeploymentName: () => Promise<string | null>;
       saveAzureDeploymentName: (name: string) => Promise<void>;
+      getAzureReasoningDeploymentName: () => Promise<string | null>;
+      saveAzureReasoningDeploymentName: (name: string) => Promise<void>;
 
       // Custom endpoint API keys
       getCustomTranscriptionKey?: () => Promise<string | null>;

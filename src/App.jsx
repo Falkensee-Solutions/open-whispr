@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import "./index.css";
 import { X } from "lucide-react";
@@ -9,6 +9,7 @@ import { formatHotkeyLabel } from "./utils/hotkeys";
 import { useWindowDrag } from "./hooks/useWindowDrag";
 import { useAudioRecording } from "./hooks/useAudioRecording";
 import { useSettingsStore } from "./stores/settingsStore";
+import registry from "./config/languageRegistry.json";
 
 // Sound Wave Icon Component (for idle/hover states)
 const SoundWaveIcon = ({ size = 16 }) => {
@@ -77,6 +78,11 @@ const Tooltip = ({ children, content, emoji, align = "center" }) => {
   );
 };
 
+// Language registry lookup by code
+const LANG_MAP = Object.fromEntries(
+  registry.languages.map((l) => [l.code, { flag: l.flag, label: l.label }])
+);
+
 export default function App() {
   const [isHovered, setIsHovered] = useState(false);
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
@@ -94,6 +100,21 @@ export default function App() {
   const floatingIconAutoHide = useSettingsStore((s) => s.floatingIconAutoHide);
   const panelStartPosition = useSettingsStore((s) => s.panelStartPosition);
   const prevAutoHideRef = useRef(floatingIconAutoHide);
+
+  // Quick language switching
+  const quickLanguages = useSettingsStore((s) => s.quickLanguages);
+  const preferredLanguage = useSettingsStore((s) => s.preferredLanguage);
+  const setPreferredLanguage = useSettingsStore((s) => s.setPreferredLanguage);
+  const quickLangItems = useMemo(
+    () =>
+      quickLanguages
+        .map((code) => {
+          const entry = LANG_MAP[code];
+          return entry ? { code, flag: entry.flag, label: entry.label } : null;
+        })
+        .filter(Boolean),
+    [quickLanguages]
+  );
 
   const setWindowInteractivity = React.useCallback((shouldCapture) => {
     window.electronAPI?.setMainWindowInteractivity?.(shouldCapture);
@@ -219,6 +240,19 @@ export default function App() {
     return () => unsubscribe?.();
   }, [cancelRecording]);
 
+  // Language cycle hotkey — cycle through quickLanguages
+  useEffect(() => {
+    const unsubscribe = window.electronAPI?.onCycleLanguage?.(() => {
+      const langs = useSettingsStore.getState().quickLanguages;
+      if (langs.length === 0) return;
+      const current = useSettingsStore.getState().preferredLanguage;
+      const idx = langs.indexOf(current);
+      const next = langs[(idx + 1) % langs.length];
+      useSettingsStore.getState().setPreferredLanguage(next);
+    });
+    return () => unsubscribe?.();
+  }, []);
+
   // Auto-hide the floating icon when idle (setting enabled or dictation cycle completed)
   useEffect(() => {
     let hideTimeout;
@@ -287,7 +321,7 @@ export default function App() {
 
   const getMicButtonProps = () => {
     const baseClasses =
-      "rounded-full w-10 h-10 flex items-center justify-center relative overflow-hidden border-2 border-white/70 cursor-pointer";
+      "rounded-full w-7 h-7 flex items-center justify-center relative overflow-hidden border border-white/70 cursor-pointer";
 
     switch (micState) {
       case "idle":
@@ -330,7 +364,7 @@ export default function App() {
         }`}
       >
         <div
-          className="relative flex items-center gap-2"
+          className="relative flex flex-col items-center"
           onMouseEnter={() => {
             setIsHovered(true);
             setWindowInteractivity(true);
@@ -342,6 +376,36 @@ export default function App() {
             }
           }}
         >
+          {/* Quick language flags — always visible when idle */}
+          {!isRecording && !isProcessing && quickLangItems.length > 0 && (
+            <div className="flex items-center gap-0.5 mb-1">
+              {quickLangItems.map((lang) => {
+                const isActive = preferredLanguage === lang.code;
+                return (
+                  <button
+                    key={lang.code}
+                    aria-label={lang.label}
+                    title={lang.label}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreferredLanguage(lang.code);
+                    }}
+                    className={`flex items-center justify-center w-5 h-5 rounded-full text-xs leading-none cursor-pointer transition-all duration-150
+                      ${
+                        isActive
+                          ? "ring-1.5 ring-white/70 scale-110"
+                          : "opacity-40 hover:opacity-80"
+                      }
+                    `}
+                  >
+                    {lang.flag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="relative flex items-center gap-2">
           {(isRecording || isProcessing) && isHovered && (
             <button
               aria-label={
@@ -437,7 +501,7 @@ export default function App() {
 
               {/* Dynamic content based on state */}
               {micState === "idle" || micState === "hover" ? (
-                <SoundWaveIcon size={micState === "idle" ? 12 : 14} />
+                <SoundWaveIcon size={micState === "idle" ? 10 : 12} />
               ) : micState === "recording" ? (
                 <LoadingDots />
               ) : micState === "processing" ? (
@@ -491,6 +555,7 @@ export default function App() {
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

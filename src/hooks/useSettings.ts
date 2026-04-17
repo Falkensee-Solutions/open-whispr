@@ -40,6 +40,7 @@ export interface ReasoningSettings {
 export interface HotkeySettings {
   dictationKey: string;
   meetingKey: string;
+  languageCycleKey: string;
   activationMode: "tap" | "push";
 }
 
@@ -57,6 +58,7 @@ export interface ApiKeySettings {
   azureApiKey: string;
   azureEndpoint: string;
   azureDeploymentName: string;
+  azureReasoningDeploymentName: string;
   customTranscriptionApiKey: string;
   customReasoningApiKey: string;
 }
@@ -211,6 +213,7 @@ function useSettingsInternal() {
     azureApiKey: store.azureApiKey,
     azureEndpoint: store.azureEndpoint,
     azureDeploymentName: store.azureDeploymentName,
+    azureReasoningDeploymentName: store.azureReasoningDeploymentName,
     dictationKey: store.dictationKey,
     meetingKey: store.meetingKey,
     theme: store.theme,
@@ -247,12 +250,16 @@ function useSettingsInternal() {
     setAzureApiKey: store.setAzureApiKey,
     setAzureEndpoint: store.setAzureEndpoint,
     setAzureDeploymentName: store.setAzureDeploymentName,
+    setAzureReasoningDeploymentName: store.setAzureReasoningDeploymentName,
+    azureReasoningDeploymentName: store.azureReasoningDeploymentName,
     customTranscriptionApiKey: store.customTranscriptionApiKey,
     setCustomTranscriptionApiKey: store.setCustomTranscriptionApiKey,
     customReasoningApiKey: store.customReasoningApiKey,
     setCustomReasoningApiKey: store.setCustomReasoningApiKey,
     setDictationKey: store.setDictationKey,
     setMeetingKey: store.setMeetingKey,
+    languageCycleKey: store.languageCycleKey,
+    setLanguageCycleKey: store.setLanguageCycleKey,
     setTheme: store.setTheme,
     activationMode: store.activationMode,
     setActivationMode: store.setActivationMode,

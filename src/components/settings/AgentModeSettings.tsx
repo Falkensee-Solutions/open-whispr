@@ -53,6 +53,8 @@ export default function AgentModeSettings() {
     setAzureEndpoint,
     azureDeploymentName,
     setAzureDeploymentName,
+    azureReasoningDeploymentName,
+    setAzureReasoningDeploymentName,
     customReasoningApiKey,
     setCustomReasoningApiKey,
     cloudReasoningBaseUrl,
@@ -130,6 +132,8 @@ export default function AgentModeSettings() {
       setAzureEndpoint={setAzureEndpoint}
       azureDeploymentName={azureDeploymentName}
       setAzureDeploymentName={setAzureDeploymentName}
+      azureReasoningDeploymentName={azureReasoningDeploymentName}
+      setAzureReasoningDeploymentName={setAzureReasoningDeploymentName}
       customReasoningApiKey={customReasoningApiKey}
       setCustomReasoningApiKey={setCustomReasoningApiKey}
       mode={mode}

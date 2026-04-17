@@ -55,6 +55,8 @@ interface ReasoningModelSelectorProps {
   setAzureEndpoint: (endpoint: string) => void;
   azureDeploymentName: string;
   setAzureDeploymentName: (name: string) => void;
+  azureReasoningDeploymentName: string;
+  setAzureReasoningDeploymentName: (name: string) => void;
   customReasoningApiKey?: string;
   setCustomReasoningApiKey?: (key: string) => void;
   mode?: "cloud" | "local";
@@ -332,6 +334,8 @@ export default function ReasoningModelSelector({
   setAzureEndpoint,
   azureDeploymentName,
   setAzureDeploymentName,
+  azureReasoningDeploymentName,
+  setAzureReasoningDeploymentName,
   customReasoningApiKey = "",
   setCustomReasoningApiKey,
   mode,
@@ -1005,9 +1009,9 @@ export default function ReasoningModelSelector({
                       className="h-8 text-sm"
                     />
                     <Input
-                      placeholder={t("azure.deploymentPlaceholder")}
-                      value={azureDeploymentName}
-                      onChange={(e) => setAzureDeploymentName(e.target.value)}
+                      placeholder={t("azure.reasoningDeploymentPlaceholder")}
+                      value={azureReasoningDeploymentName}
+                      onChange={(e) => setAzureReasoningDeploymentName(e.target.value)}
                       className="h-8 text-sm"
                     />
                   </div>

@@ -1150,7 +1150,7 @@ class ReasoningService extends BaseReasoningService {
     const apiKey = await this.getApiKey("azure");
     const settings = getSettings();
     const azureEndpoint = (settings as any).azureEndpoint || "";
-    const azureDeploymentName = (settings as any).azureDeploymentName || "";
+    const azureDeploymentName = (settings as any).azureReasoningDeploymentName || (settings as any).azureDeploymentName || "";
 
     if (!azureEndpoint) {
       throw new Error("Azure endpoint is not configured. Please set it in Settings.");
@@ -1159,9 +1159,10 @@ class ReasoningService extends BaseReasoningService {
     this.isProcessing = true;
 
     try {
-      const baseUrl = azureEndpoint.replace(/\/+$/, "");
+      // Normalize: strip trailing slash, /openai/v1, /openai, /api/projects/* to get base host
+      const baseUrl = azureEndpoint.replace(/\/+$/, "").replace(/\/openai(\/v\d+)?$/, "").replace(/\/api\/projects\/[^/]+$/, "");
       const deployment = azureDeploymentName || model;
-      const endpoint = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=2025-01-01`;
+      const endpoint = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=2024-10-21`;
 
       const systemPrompt = config.systemPrompt || this.getSystemPrompt(agentName, text);
       const messages = [

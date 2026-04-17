@@ -6,7 +6,9 @@
       "uiLabel": "インターフェース言語",
       "uiDescription": "OpenWhispr のインターフェースで使用する言語を選択",
       "transcriptionLabel": "文字起こし言語",
-      "transcriptionDescription": "より正確な文字起こしのために話す言語を選択"
+      "transcriptionDescription": "より正確な文字起こしのために話す言語を選択",
+      "quickLanguagesLabel": "クイック言語",
+      "quickLanguagesDescription": "フローティングアイコンに表示される言語切り替え用のフラグショートカット"
     },
     "noteFiles": {
       "title": "ノートをファイルとして保存",
@@ -1233,6 +1235,11 @@
         "description": "ミーティングモードを開始し、パネルを画面の横に配置する",
         "clear": "ホットキーを削除"
       },
+      "languageCycleHotkey": {
+        "title": "言語切り替えホットキー",
+        "description": "キーボードショートカットでクイック言語を切り替える",
+        "clear": "ホットキーを削除"
+      },
       "microphone": {
         "description": "ディクテーションに使用する入力デバイスを選択",
         "title": "マイク"
@@ -2285,6 +2292,7 @@
   },
   "azure": {
     "endpointPlaceholder": "Azureエンドポイント（例: https://myresource.openai.azure.com）",
-    "deploymentPlaceholder": "デプロイメント名（例: gpt-4o）"
+    "deploymentPlaceholder": "デプロイメント名（例: whisper）",
+    "reasoningDeploymentPlaceholder": "チャットデプロイメント名（例: gpt-4o）"
   }
 }

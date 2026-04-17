@@ -658,6 +658,33 @@ async function startApp() {
     }
   });
 
+  // Language cycle hotkey
+  const languageCycleCallback = () => {
+    if (hotkeyManager.isInListeningMode()) return;
+    debugLogger.info("Language cycle hotkey triggered", {}, "hotkey");
+    windowManager.mainWindow?.webContents?.send("cycle-language");
+  };
+
+  const savedLanguageCycleKey = environmentManager.getLanguageCycleKey?.() || "";
+  if (savedLanguageCycleKey) {
+    await hotkeyManager.registerSlot("languageCycle", savedLanguageCycleKey, languageCycleCallback);
+  }
+
+  ipcMain.handle("register-language-cycle-hotkey", async (_event, hotkey) => {
+    if (hotkey) {
+      const result = await hotkeyManager.registerSlot("languageCycle", hotkey, languageCycleCallback);
+      if (result.success) {
+        environmentManager.saveLanguageCycleKey(hotkey);
+        return { success: true };
+      }
+      return { success: false, message: result.error };
+    } else {
+      hotkeyManager.unregisterSlot("languageCycle");
+      environmentManager.saveLanguageCycleKey("");
+      return { success: true };
+    }
+  });
+
   // Phase 2: Initialize remaining managers after windows are visible
   initializeDeferredManagers();
 

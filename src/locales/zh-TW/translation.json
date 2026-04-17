@@ -6,7 +6,9 @@
       "uiLabel": "介面語言",
       "uiDescription": "選擇 OpenWhispr 介面使用的語言",
       "transcriptionLabel": "轉錄語言",
-      "transcriptionDescription": "選擇你說話的語言，以提高轉錄準確度"
+      "transcriptionDescription": "選擇你說話的語言，以提高轉錄準確度",
+      "quickLanguagesLabel": "快捷語言",
+      "quickLanguagesDescription": "浮動圖示上顯示的國旗快捷方式，可快速切換語言"
     },
     "noteFiles": {
       "title": "將筆記儲存為檔案",
@@ -1228,6 +1230,11 @@
         "description": "啟動會議模式並將面板固定到螢幕側邊",
         "clear": "移除快捷鍵"
       },
+      "languageCycleHotkey": {
+        "title": "語言切換快捷鍵",
+        "description": "使用鍵盤快捷鍵在快速語言之間切換",
+        "clear": "移除快捷鍵"
+      },
       "microphone": {
         "description": "選擇用於語音輸入的輸入裝置",
         "title": "麥克風"
@@ -2280,6 +2287,7 @@
   },
   "azure": {
     "endpointPlaceholder": "Azure 端點（例如 https://myresource.openai.azure.com）",
-    "deploymentPlaceholder": "部署名稱（例如 gpt-4o）"
+    "deploymentPlaceholder": "部署名稱（例如 whisper）",
+    "reasoningDeploymentPlaceholder": "聊天部署名稱（例如 gpt-4o）"
   }
 }

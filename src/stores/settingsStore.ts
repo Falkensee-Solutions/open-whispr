@@ -70,7 +70,7 @@ const BOOLEAN_SETTINGS = new Set([
   "showTranscriptionPreview",
 ]);
 
-const ARRAY_SETTINGS = new Set(["customDictionary", "gcalAccounts"]);
+const ARRAY_SETTINGS = new Set(["customDictionary", "quickLanguages", "gcalAccounts"]);
 
 const NUMERIC_SETTINGS = new Set(["audioRetentionDays"]);
 
@@ -216,6 +216,8 @@ export interface SettingsState
   setCloudReasoningMode: (value: string) => void;
   setCloudReasoningBaseUrl: (value: string) => void;
   setCustomDictionary: (words: string[]) => void;
+  quickLanguages: string[];
+  setQuickLanguages: (languages: string[]) => void;
   setAssemblyAiStreaming: (value: boolean) => void;
   setUseReasoningModel: (value: boolean) => void;
   setReasoningModel: (value: string) => void;
@@ -230,11 +232,13 @@ export interface SettingsState
   setAzureApiKey: (key: string) => void;
   setAzureEndpoint: (endpoint: string) => void;
   setAzureDeploymentName: (name: string) => void;
+  setAzureReasoningDeploymentName: (name: string) => void;
   setCustomTranscriptionApiKey: (key: string) => void;
   setCustomReasoningApiKey: (key: string) => void;
 
   setDictationKey: (key: string) => void;
   setMeetingKey: (key: string) => void;
+  setLanguageCycleKey: (key: string) => void;
   setActivationMode: (mode: "tap" | "push") => void;
 
   setPreferBuiltInMic: (value: boolean) => void;
@@ -356,6 +360,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   cloudReasoningMode: readString("cloudReasoningMode", "openwhispr"),
   cloudReasoningBaseUrl: readString("cloudReasoningBaseUrl", API_ENDPOINTS.OPENAI_BASE),
   customDictionary: readStringArray("customDictionary", []),
+  quickLanguages: readStringArray("quickLanguages", ["en-US", "de", "tr"]),
   assemblyAiStreaming: readBoolean("assemblyAiStreaming", true),
 
   useReasoningModel: readBoolean("useReasoningModel", true),
@@ -370,11 +375,13 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   azureApiKey: readString("azureApiKey", ""),
   azureEndpoint: readString("azureEndpoint", ""),
   azureDeploymentName: readString("azureDeploymentName", ""),
+  azureReasoningDeploymentName: readString("azureReasoningDeploymentName", ""),
   customTranscriptionApiKey: readString("customTranscriptionApiKey", ""),
   customReasoningApiKey: readString("customReasoningApiKey", ""),
 
   dictationKey: readString("dictationKey", ""),
   meetingKey: readString("meetingKey", ""),
+  languageCycleKey: readString("languageCycleKey", ""),
   activationMode: (readString("activationMode", "tap") === "push" ? "push" : "tap") as
     | "tap"
     | "push",
@@ -536,6 +543,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     });
   },
 
+  setQuickLanguages: (languages: string[]) => {
+    if (isBrowser) localStorage.setItem("quickLanguages", JSON.stringify(languages));
+    set({ quickLanguages: languages });
+  },
+
   setUiLanguage: (language: string) => {
     const normalized = normalizeUiLanguage(language);
     if (isBrowser) localStorage.setItem("uiLanguage", normalized);
@@ -598,6 +610,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     set({ azureDeploymentName: name });
     window.electronAPI?.saveAzureDeploymentName?.(name);
   },
+  setAzureReasoningDeploymentName: (name: string) => {
+    if (isBrowser) localStorage.setItem("azureReasoningDeploymentName", name);
+    set({ azureReasoningDeploymentName: name });
+    window.electronAPI?.saveAzureReasoningDeploymentName?.(name);
+  },
   setCustomTranscriptionApiKey: (key: string) => {
     if (isBrowser) localStorage.setItem("customTranscriptionApiKey", key);
     set({ customTranscriptionApiKey: key });
@@ -622,6 +639,10 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setMeetingKey: (key: string) => {
     if (isBrowser) localStorage.setItem("meetingKey", key);
     set({ meetingKey: key });
+  },
+  setLanguageCycleKey: (key: string) => {
+    if (isBrowser) localStorage.setItem("languageCycleKey", key);
+    set({ languageCycleKey: key });
   },
 
   setActivationMode: (mode: "tap" | "push") => {
@@ -838,6 +859,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (keys.azureApiKey !== undefined) s.setAzureApiKey(keys.azureApiKey);
     if (keys.azureEndpoint !== undefined) s.setAzureEndpoint(keys.azureEndpoint);
     if (keys.azureDeploymentName !== undefined) s.setAzureDeploymentName(keys.azureDeploymentName);
+    if (keys.azureReasoningDeploymentName !== undefined) s.setAzureReasoningDeploymentName(keys.azureReasoningDeploymentName);
     if (keys.customTranscriptionApiKey !== undefined)
       s.setCustomTranscriptionApiKey(keys.customTranscriptionApiKey);
     if (keys.customReasoningApiKey !== undefined)
@@ -935,6 +957,10 @@ export async function initializeSettings(): Promise<void> {
       if (!state.azureDeploymentName) {
         const envName = await window.electronAPI.getAzureDeploymentName?.();
         if (envName) createStringSetter("azureDeploymentName")(envName);
+      }
+      if (!state.azureReasoningDeploymentName) {
+        const envName = await window.electronAPI.getAzureReasoningDeploymentName?.();
+        if (envName) createStringSetter("azureReasoningDeploymentName")(envName);
       }
       if (!state.customTranscriptionApiKey) {
         const envKey = await window.electronAPI.getCustomTranscriptionKey?.();

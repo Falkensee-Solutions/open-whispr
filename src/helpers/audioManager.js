@@ -1527,11 +1527,27 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         "transcription"
       );
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        body: formData,
-      });
+      // Fetch with automatic retry on 429 (rate limit) — respects Retry-After header
+      const MAX_RETRIES = 2;
+      let response;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+
+        if (response.status !== 429 || attempt === MAX_RETRIES) break;
+
+        const retryAfter = response.headers.get("retry-after");
+        const waitSec = retryAfter ? Math.min(parseInt(retryAfter, 10) || 15, 30) : 15;
+        logger.warn(
+          "Transcription rate-limited, retrying",
+          { attempt: attempt + 1, waitSec, provider },
+          "transcription"
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitSec * 1000));
+      }
 
       const responseContentType = response.headers.get("content-type") || "";
 
@@ -1780,8 +1796,9 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         const azureEndpoint = s.azureEndpoint || "";
         const azureDeploymentName = s.azureDeploymentName || "";
         if (azureEndpoint && azureDeploymentName) {
-          const azureBase = azureEndpoint.replace(/\/+$/, "");
-          azureFullEndpoint = `${azureBase}/openai/deployments/${azureDeploymentName}/audio/transcriptions?api-version=2025-01-01`;
+          // Normalize: strip trailing slash, /openai/v1, /openai, /api/projects/* to get base host
+          const azureBase = azureEndpoint.replace(/\/+$/, "").replace(/\/openai(\/v\d+)?$/, "").replace(/\/api\/projects\/[^/]+$/, "");
+          azureFullEndpoint = `${azureBase}/openai/deployments/${azureDeploymentName}/audio/transcriptions?api-version=2024-10-21`;
         }
         base = API_ENDPOINTS.TRANSCRIPTION_BASE;
       } else {

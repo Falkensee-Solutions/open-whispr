@@ -360,6 +360,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveAzureEndpoint: (endpoint) => ipcRenderer.invoke("save-azure-endpoint", endpoint),
   getAzureDeploymentName: () => ipcRenderer.invoke("get-azure-deployment-name"),
   saveAzureDeploymentName: (name) => ipcRenderer.invoke("save-azure-deployment-name", name),
+  getAzureReasoningDeploymentName: () => ipcRenderer.invoke("get-azure-reasoning-deployment-name"),
+  saveAzureReasoningDeploymentName: (name) => ipcRenderer.invoke("save-azure-reasoning-deployment-name", name),
 
   // Custom endpoint API keys
   getCustomTranscriptionKey: () => ipcRenderer.invoke("get-custom-transcription-key"),
@@ -622,6 +624,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   notifyActivationModeChanged: (mode) => ipcRenderer.send("activation-mode-changed", mode),
   notifyHotkeyChanged: (hotkey) => ipcRenderer.send("hotkey-changed", hotkey),
   registerMeetingHotkey: (hotkey) => ipcRenderer.invoke("register-meeting-hotkey", hotkey),
+  registerLanguageCycleHotkey: (hotkey) => ipcRenderer.invoke("register-language-cycle-hotkey", hotkey),
+  onCycleLanguage: registerListener("cycle-language", (callback) => () => callback()),
 
   // Floating icon auto-hide
   notifyFloatingIconAutoHideChanged: (enabled) =>

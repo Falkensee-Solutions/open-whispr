@@ -6,7 +6,9 @@
       "uiLabel": "Idioma da interface",
       "uiDescription": "Escolha o idioma usado na interface do OpenWhispr",
       "transcriptionLabel": "Idioma de transcrição",
-      "transcriptionDescription": "Escolha o idioma que você fala para maior precisão"
+      "transcriptionDescription": "Escolha o idioma que você fala para maior precisão",
+      "quickLanguagesLabel": "Idiomas rápidos",
+      "quickLanguagesDescription": "Atalhos de bandeiras no ícone flutuante para troca rápida de idioma"
     },
     "noteFiles": {
       "title": "Salvar notas como arquivos",
@@ -1205,6 +1207,11 @@
         "description": "Iniciar modo reunião e posicionar o painel ao lado da tela",
         "clear": "Remover atalho"
       },
+      "languageCycleHotkey": {
+        "title": "Atalho troca de idioma",
+        "description": "Alternar entre os idiomas rápidos com um atalho de teclado",
+        "clear": "Remover atalho"
+      },
       "microphone": {
         "description": "Selecione qual dispositivo de entrada usar para ditado",
         "title": "Microfone"
@@ -2285,6 +2292,7 @@
   },
   "azure": {
     "endpointPlaceholder": "Endpoint Azure (ex., https://myresource.openai.azure.com)",
-    "deploymentPlaceholder": "Nome da implantação (ex., gpt-4o)"
+    "deploymentPlaceholder": "Nome da implantação (ex., whisper)",
+    "reasoningDeploymentPlaceholder": "Nome da implantação de chat (ex., gpt-4o)"
   }
 }

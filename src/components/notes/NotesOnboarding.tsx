@@ -54,6 +54,8 @@ export default function NotesOnboarding({ onComplete }: NotesOnboardingProps) {
   const setAzureEndpoint = useSettingsStore((s) => s.setAzureEndpoint);
   const azureDeploymentName = useSettingsStore((s) => s.azureDeploymentName);
   const setAzureDeploymentName = useSettingsStore((s) => s.setAzureDeploymentName);
+  const azureReasoningDeploymentName = useSettingsStore((s) => s.azureReasoningDeploymentName);
+  const setAzureReasoningDeploymentName = useSettingsStore((s) => s.setAzureReasoningDeploymentName);
   const customReasoningApiKey = useSettingsStore((s) => s.customReasoningApiKey);
   const setCustomReasoningApiKey = useSettingsStore((s) => s.setCustomReasoningApiKey);
 
@@ -194,6 +196,8 @@ export default function NotesOnboarding({ onComplete }: NotesOnboardingProps) {
                   setAzureEndpoint={setAzureEndpoint}
                   azureDeploymentName={azureDeploymentName}
                   setAzureDeploymentName={setAzureDeploymentName}
+                  azureReasoningDeploymentName={azureReasoningDeploymentName}
+                  setAzureReasoningDeploymentName={setAzureReasoningDeploymentName}
                   customReasoningApiKey={customReasoningApiKey}
                   setCustomReasoningApiKey={setCustomReasoningApiKey}
                 />
