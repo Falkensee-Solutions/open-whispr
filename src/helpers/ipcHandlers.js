@@ -91,7 +91,7 @@ function postMultipart(url, body, boundary, headers = {}) {
       {
         hostname: url.hostname,
         port: url.port || (url.protocol === "https:" ? 443 : 80),
-        path: url.pathname,
+        path: url.pathname + (url.search || ""),
         method: "POST",
         headers: {
           "Content-Type": `multipart/form-data; boundary=${boundary}`,
