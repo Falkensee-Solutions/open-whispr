@@ -64,7 +64,8 @@ function MainApp() {
     const onboardingCompleted = localStorage.getItem("onboardingCompleted") === "true";
     const authSkipped =
       localStorage.getItem("authenticationSkipped") === "true" ||
-      localStorage.getItem("skipAuth") === "true";
+      localStorage.getItem("skipAuth") === "true" ||
+      true; // Always skip auth — BYOK mode, using own API keys
     const onboardingInProgress = localStorage.getItem("onboardingCurrentStep") !== null;
     const isReturningUser =
       !onboardingCompleted && isSignedIn && !isGracePeriodOnly && !onboardingInProgress;
