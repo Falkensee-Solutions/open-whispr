@@ -39,7 +39,22 @@ const AUDIO_MIME_TYPES = {
   ogg: "audio/ogg",
   flac: "audio/flac",
   aac: "audio/aac",
+  opus: "audio/opus",
+  wma: "audio/x-ms-wma",
+  amr: "audio/amr",
+  caf: "audio/x-caf",
+  aiff: "audio/aiff",
+  aif: "audio/aiff",
+  oga: "audio/ogg",
+  mp2: "audio/mpeg",
+  "3gp": "audio/3gpp",
+  spx: "audio/ogg",
+  wv: "audio/x-wavpack",
+  mka: "audio/x-matroska",
 };
+
+// Formats natively accepted by most speech-to-text APIs (OpenAI, Groq, etc.)
+const API_NATIVE_FORMATS = new Set(["mp3", "wav", "m4a", "webm", "ogg", "flac", "aac", "oga", "mp2"]);
 
 function buildMultipartBody(fileBuffer, fileName, contentType, fields = {}) {
   const boundary = `----OpenWhispr${Date.now()}`;
@@ -1195,7 +1210,7 @@ class IPCHandlers {
       const result = await dialog.showOpenDialog({
         properties: ["openFile"],
         filters: [
-          { name: "Audio Files", extensions: ["mp3", "wav", "m4a", "webm", "ogg", "flac", "aac"] },
+          { name: "Audio Files", extensions: ["mp3", "wav", "m4a", "webm", "ogg", "flac", "aac", "opus", "wma", "amr", "caf", "aiff", "aif", "oga", "mp2", "3gp", "spx", "wv", "mka"] },
         ],
       });
       if (result.canceled || !result.filePaths.length) {
@@ -5434,23 +5449,33 @@ class IPCHandlers {
       "transcribe-audio-file-byok",
       async (event, { filePath, apiKey, baseUrl, model }) => {
         const fs = require("fs");
-        const BYOK_FILE_SIZE_LIMIT = 25 * 1024 * 1024; // 25 MB
+        const os = require("os");
+        const { convertToMp3 } = require("./ffmpegUtils");
+        let tempConvertedPath = null;
         try {
           if (!apiKey) throw new Error("No API key configured. Add your key in Settings.");
           if (!baseUrl) throw new Error("No transcription endpoint configured.");
 
-          const fileSize = fs.statSync(filePath).size;
-          if (fileSize > BYOK_FILE_SIZE_LIMIT) {
-            return {
-              success: false,
-              error: "File too large. Maximum size for bring-your-own-key is 25 MB.",
-            };
+          let actualFilePath = filePath;
+          const ext = path.extname(filePath).toLowerCase().replace(".", "");
+
+          // Auto-convert formats not natively supported by most speech-to-text APIs
+          if (!API_NATIVE_FORMATS.has(ext)) {
+            debugLogger.debug("BYOK: converting non-native format to MP3", { ext, filePath });
+            tempConvertedPath = path.join(
+              os.tmpdir(),
+              `openwhispr-byok-${Date.now()}.mp3`
+            );
+            await convertToMp3(filePath, tempConvertedPath);
+            actualFilePath = tempConvertedPath;
           }
 
-          const audioBuffer = fs.readFileSync(filePath);
-          const ext = path.extname(filePath).toLowerCase().replace(".", "");
-          const contentType = AUDIO_MIME_TYPES[ext] || "audio/mpeg";
-          const fileName = path.basename(filePath);
+          const audioBuffer = fs.readFileSync(actualFilePath);
+          const actualExt = path.extname(actualFilePath).toLowerCase().replace(".", "");
+          const contentType = AUDIO_MIME_TYPES[actualExt] || "audio/mpeg";
+          const fileName = tempConvertedPath
+            ? path.basename(filePath).replace(/\.[^.]+$/, ".mp3")
+            : path.basename(filePath);
 
           let transcriptionUrl = baseUrl.replace(/\/+$/, "");
           if (!transcriptionUrl.endsWith("/audio/transcriptions")) {
@@ -5482,6 +5507,15 @@ class IPCHandlers {
         } catch (error) {
           debugLogger.error("BYOK audio file transcription error", { error: error.message });
           return { success: false, error: error.message };
+        } finally {
+          // Clean up temporary converted file
+          if (tempConvertedPath) {
+            try {
+              fs.unlinkSync(tempConvertedPath);
+            } catch {
+              // ignore cleanup errors
+            }
+          }
         }
       }
     );

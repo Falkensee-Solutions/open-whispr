@@ -319,6 +319,81 @@ function splitAudioFile(inputPath, outputDir, options = {}) {
   });
 }
 
+function convertToMp3(inputPath, outputPath, options = {}) {
+  const { audioBitrate = "128k", sampleRate = 16000, channels = 1 } = options;
+
+  return new Promise((resolve, reject) => {
+    const ffmpegPath = getFFmpegPath();
+    if (!ffmpegPath) {
+      reject(new Error("FFmpeg not found - required for audio conversion"));
+      return;
+    }
+
+    const args = [
+      "-i",
+      inputPath,
+      "-c:a",
+      "libmp3lame",
+      "-b:a",
+      audioBitrate,
+      "-ar",
+      String(sampleRate),
+      "-ac",
+      String(channels),
+      "-y",
+      outputPath,
+    ];
+
+    debugLogger.debug("Converting audio to MP3 with FFmpeg", {
+      input: inputPath,
+      output: outputPath,
+      audioBitrate,
+      sampleRate,
+      channels,
+    });
+
+    const proc = spawn(ffmpegPath, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+
+    let stderr = "";
+
+    proc.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    proc.on("error", (error) => {
+      reject(new Error(`FFmpeg process error: ${error.message}`));
+    });
+
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        const stderrPreview = stderr.slice(-500).trim();
+        debugLogger.debug("FFmpeg MP3 conversion failed", { code, stderr: stderrPreview });
+        reject(
+          new Error(`FFmpeg exited with code ${code}${stderrPreview ? `: ${stderrPreview}` : ""}`)
+        );
+        return;
+      }
+
+      if (!fs.existsSync(outputPath)) {
+        reject(new Error("FFmpeg conversion produced no output file"));
+        return;
+      }
+
+      const stats = fs.statSync(outputPath);
+      if (stats.size === 0) {
+        reject(new Error("FFmpeg conversion produced empty output file"));
+        return;
+      }
+
+      debugLogger.debug("FFmpeg MP3 conversion complete", { outputSize: stats.size });
+      resolve();
+    });
+  });
+}
+
 function clearCache() {
   cachedFFmpegPath = null;
 }
@@ -327,6 +402,7 @@ module.exports = {
   getFFmpegPath,
   isWavFormat,
   convertToWav,
+  convertToMp3,
   splitAudioFile,
   wavToFloat32Samples,
   computeFloat32RMS,
