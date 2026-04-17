@@ -414,6 +414,8 @@ export default function ControlPanel() {
           transcriptionMode: s.transcriptionMode,
           remoteTranscriptionType: s.remoteTranscriptionType,
           remoteTranscriptionUrl: s.remoteTranscriptionUrl,
+          azureEndpoint: s.azureEndpoint,
+          azureDeploymentName: s.azureDeploymentName,
         });
         if (result.success && result.transcription) {
           const rawText = result.transcription.text;

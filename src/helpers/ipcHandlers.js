@@ -233,6 +233,7 @@ class IPCHandlers {
   _resolveByokModel(provider, configuredModel) {
     const trimmed = (configuredModel || "").trim();
     if (provider === "custom") return trimmed || "whisper-1";
+    if (provider === "azure") return trimmed || "gpt-4o-mini-transcribe";
     if (trimmed) {
       const isGroq = trimmed.startsWith("whisper-large-v3");
       const isOpenAI = trimmed.startsWith("gpt-4o") || trimmed === "whisper-1";
@@ -3206,6 +3207,14 @@ class IPCHandlers {
           } else if (provider === "mistral") {
             apiKey = this.environmentManager.getMistralKey();
             endpoint = MISTRAL_TRANSCRIPTION_URL;
+          } else if (provider === "azure") {
+            apiKey = this.environmentManager.getAzureKey();
+            const azureEndpoint = (settings?.azureEndpoint || "").replace(/\/+$/, "").replace(/\/openai(\/v\d+)?$/, "").replace(/\/api\/projects\/[^/]+$/, "");
+            const azureDeploymentName = settings?.azureDeploymentName || "";
+            if (!azureEndpoint || !azureDeploymentName) {
+              throw new Error("Azure endpoint or deployment name not configured. Please set them in Settings.");
+            }
+            endpoint = `${azureEndpoint}/openai/deployments/${azureDeploymentName}/audio/transcriptions?api-version=2024-10-21`;
           } else if (provider === "custom") {
             apiKey = this.environmentManager.getCustomTranscriptionKey();
             const base = (settings?.cloudTranscriptionBaseUrl || "").trim();
@@ -3226,7 +3235,9 @@ class IPCHandlers {
           formData.append("file", new Blob([buffer], { type: "audio/webm" }), "audio.webm");
           formData.append("model", model);
           const headers = {};
-          if (provider === "mistral") {
+          if (provider === "azure") {
+            headers["api-key"] = apiKey;
+          } else if (provider === "mistral") {
             headers["x-api-key"] = apiKey;
           } else if (apiKey) {
             headers.Authorization = `Bearer ${apiKey}`;
