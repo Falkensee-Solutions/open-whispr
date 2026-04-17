@@ -191,6 +191,9 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
         if (cloudTranscriptionProvider === "custom") {
           // Custom providers only need a base URL; API key is truly optional
           if (!cancelled) setProviderReady(!!cloudTranscriptionBaseUrl?.trim());
+        } else if (cloudTranscriptionProvider === "azure") {
+          // Azure needs API key + endpoint + deployment name
+          if (!cancelled) setProviderReady(!!(azureApiKey && azureEndpoint?.trim() && azureDeploymentName?.trim()));
         } else {
           const key =
             cloudTranscriptionProvider === "openai"
@@ -231,6 +234,9 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
     openaiApiKey,
     groqApiKey,
     mistralApiKey,
+    azureApiKey,
+    azureEndpoint,
+    azureDeploymentName,
     customTranscriptionApiKey,
   ]);
 
@@ -256,11 +262,21 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
         return groqApiKey;
       case "mistral":
         return mistralApiKey;
+      case "azure":
+        return azureApiKey;
       case "custom":
         return customTranscriptionApiKey || "";
       default:
         return "";
     }
+  };
+
+  const getActiveBaseUrl = (): string => {
+    if (cloudTranscriptionProvider === "azure" && azureEndpoint && azureDeploymentName) {
+      const azureBase = azureEndpoint.replace(/\/+$/, "").replace(/\/openai(\/v\d+)?$/, "").replace(/\/api\/projects\/[^/]+$/, "");
+      return `${azureBase}/openai/deployments/${azureDeploymentName}/audio/transcriptions?api-version=2024-10-21`;
+    }
+    return cloudTranscriptionBaseUrl || "";
   };
 
   const generateTitle = async (text: string): Promise<string> => {
@@ -372,8 +388,9 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
         res = await window.electronAPI.transcribeAudioFileByok!({
           filePath: file.path,
           apiKey: getActiveApiKey(),
-          baseUrl: cloudTranscriptionBaseUrl || "",
+          baseUrl: getActiveBaseUrl(),
           model: cloudTranscriptionModel,
+          isAzure: cloudTranscriptionProvider === "azure",
         });
       }
 

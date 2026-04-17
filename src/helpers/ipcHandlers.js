@@ -5447,7 +5447,7 @@ class IPCHandlers {
 
     ipcMain.handle(
       "transcribe-audio-file-byok",
-      async (event, { filePath, apiKey, baseUrl, model }) => {
+      async (event, { filePath, apiKey, baseUrl, model, isAzure }) => {
         const fs = require("fs");
         const os = require("os");
         const { convertToMp3 } = require("./ffmpegUtils");
@@ -5477,19 +5477,28 @@ class IPCHandlers {
             ? path.basename(filePath).replace(/\.[^.]+$/, ".mp3")
             : path.basename(filePath);
 
-          let transcriptionUrl = baseUrl.replace(/\/+$/, "");
-          if (!transcriptionUrl.endsWith("/audio/transcriptions")) {
-            transcriptionUrl += "/audio/transcriptions";
+          // Azure provides a fully-qualified URL; others need /audio/transcriptions appended
+          let transcriptionUrl;
+          if (isAzure) {
+            transcriptionUrl = baseUrl;
+          } else {
+            transcriptionUrl = baseUrl.replace(/\/+$/, "");
+            if (!transcriptionUrl.endsWith("/audio/transcriptions")) {
+              transcriptionUrl += "/audio/transcriptions";
+            }
           }
 
           const { body, boundary } = buildMultipartBody(audioBuffer, fileName, contentType, {
             model: model || "whisper-1",
           });
 
+          // Azure uses api-key header; other providers use Bearer token
+          const authHeaders = isAzure
+            ? { "api-key": apiKey }
+            : { Authorization: `Bearer ${apiKey}` };
+
           const url = new URL(transcriptionUrl);
-          const data = await postMultipart(url, body, boundary, {
-            Authorization: `Bearer ${apiKey}`,
-          });
+          const data = await postMultipart(url, body, boundary, authHeaders);
 
           if (data.statusCode === 401) {
             return { success: false, error: "Invalid API key. Check your key in Settings." };

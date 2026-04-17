@@ -1036,6 +1036,7 @@ declare global {
         apiKey: string;
         baseUrl: string;
         model: string;
+        isAzure?: boolean;
       }) => Promise<{
         success: boolean;
         text?: string;
