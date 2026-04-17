@@ -1373,7 +1373,7 @@ class ReasoningService extends BaseReasoningService {
     provider: string,
     config: ReasoningConfig & { systemPrompt: string }
   ): AsyncGenerator<string, void, unknown> {
-    const cloudProviders = ["openai", "groq", "gemini", "anthropic", "custom"];
+    const cloudProviders = ["openai", "groq", "gemini", "anthropic", "custom", "azure"];
     const isLocalProvider = !cloudProviders.includes(provider);
 
     const settings = getSettings();
@@ -1382,6 +1382,7 @@ class ReasoningService extends BaseReasoningService {
 
     let endpoint: string;
     let apiKey = "";
+    let useAzureHeaders = false;
 
     if (isLanReasoning) {
       const rawUrl = lanOverride || settings.remoteReasoningUrl.trim();
@@ -1393,6 +1394,17 @@ class ReasoningService extends BaseReasoningService {
         throw new Error(serverResult.error || "Failed to start local model server");
       }
       endpoint = `http://127.0.0.1:${serverResult.port}/v1/chat/completions`;
+    } else if (provider === "azure") {
+      apiKey = await this.getApiKey("azure");
+      const azureEndpoint = (settings as any).azureEndpoint || "";
+      const azureDeployment = (settings as any).azureReasoningDeploymentName || (settings as any).azureDeploymentName || "";
+      if (!azureEndpoint) {
+        throw new Error("Azure endpoint is not configured. Please set it in Settings.");
+      }
+      const baseUrl = azureEndpoint.replace(/\/+$/, "").replace(/\/openai(\/v\d+)?$/, "");
+      const deployment = azureDeployment || model;
+      endpoint = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=2024-10-21`;
+      useAzureHeaders = true;
     } else {
       const providerKey = provider as "openai" | "groq" | "gemini" | "anthropic" | "custom";
       apiKey = await this.getApiKey(providerKey);
@@ -1448,7 +1460,11 @@ class ReasoningService extends BaseReasoningService {
       "Content-Type": "application/json",
     };
     if (apiKey) {
-      headers["Authorization"] = `Bearer ${apiKey}`;
+      if (useAzureHeaders) {
+        headers["api-key"] = apiKey;
+      } else {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
     }
 
     this.streamAbortController = new AbortController();
@@ -1562,7 +1578,7 @@ class ReasoningService extends BaseReasoningService {
     config: ReasoningConfig & { systemPrompt: string },
     tools?: Record<string, import("ai").Tool>
   ): AsyncGenerator<AgentStreamChunk, void, unknown> {
-    const cloudProviders = ["openai", "groq", "gemini", "anthropic", "custom"];
+    const cloudProviders = ["openai", "groq", "gemini", "anthropic", "custom", "azure"];
     const isLocalProvider = !cloudProviders.includes(provider);
 
     const settings = getSettings();
@@ -1593,6 +1609,15 @@ class ReasoningService extends BaseReasoningService {
         throw new Error(serverResult.error || "Failed to start local model server");
       }
       baseURL = `http://127.0.0.1:${serverResult.port}/v1`;
+    } else if (provider === "azure") {
+      apiKey = await this.getApiKey("azure");
+      const azureEndpoint = (settings as any).azureEndpoint || "";
+      const azureDeployment = (settings as any).azureReasoningDeploymentName || (settings as any).azureDeploymentName || "";
+      if (!azureEndpoint) {
+        throw new Error("Azure endpoint is not configured. Please set it in Settings.");
+      }
+      baseURL = azureEndpoint.replace(/\/+$/, "").replace(/\/openai(\/v\d+)?$/, "");
+      model = azureDeployment || model;
     } else {
       const providerKey = provider as "openai" | "groq" | "gemini" | "anthropic" | "custom";
       apiKey = await this.getApiKey(providerKey);

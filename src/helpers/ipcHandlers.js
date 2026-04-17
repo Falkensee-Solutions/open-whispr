@@ -5488,6 +5488,15 @@ class IPCHandlers {
             }
           }
 
+          debugLogger.debug("BYOK transcription request", {
+            isAzure,
+            transcriptionUrl,
+            fileName,
+            contentType,
+            model,
+            fileSize: audioBuffer.length,
+          });
+
           const { body, boundary } = buildMultipartBody(audioBuffer, fileName, contentType, {
             model: model || "whisper-1",
           });
@@ -5498,7 +5507,18 @@ class IPCHandlers {
             : { Authorization: `Bearer ${apiKey}` };
 
           const url = new URL(transcriptionUrl);
+          debugLogger.debug("BYOK postMultipart URL details", {
+            href: url.href,
+            pathname: url.pathname,
+            search: url.search,
+            fullPath: url.pathname + (url.search || ""),
+          });
           const data = await postMultipart(url, body, boundary, authHeaders);
+
+          debugLogger.debug("BYOK transcription response", {
+            statusCode: data.statusCode,
+            data: JSON.stringify(data.data).slice(0, 500),
+          });
 
           if (data.statusCode === 401) {
             return { success: false, error: "Invalid API key. Check your key in Settings." };

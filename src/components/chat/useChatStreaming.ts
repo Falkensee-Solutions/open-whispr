@@ -97,7 +97,7 @@ export function useChatStreaming({
       const agentMode = settings.agentInferenceMode || "openwhispr";
       const isCloudAgent = agentMode === "openwhispr" && settings.isSignedIn;
       const isLanAgent = agentMode === "self-hosted" && !!settings.remoteAgentUrl;
-      const isLocalProvider = !["openai", "groq", "custom", "anthropic", "gemini"].includes(
+      const isLocalProvider = !["openai", "groq", "custom", "anthropic", "gemini", "azure"].includes(
         settings.agentProvider
       );
       const localModelCanUseTool =
