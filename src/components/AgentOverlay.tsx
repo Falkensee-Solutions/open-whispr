@@ -7,6 +7,7 @@ import { AgentInput } from "./agent/AgentInput";
 import AudioManager from "../helpers/audioManager";
 import { useChatPersistence } from "./chat/useChatPersistence";
 import { useChatStreaming } from "./chat/useChatStreaming";
+import { openTab } from "../stores/chatStore";
 import type { Message } from "./chat/types";
 
 const MIN_HEIGHT = 200;
@@ -51,6 +52,11 @@ export default function AgentOverlay() {
 
       if (!persistence.conversationId) {
         await persistence.createConversation(t("agentMode.titleBar.newChat"));
+      }
+
+      // Open a tab for this conversation
+      if (persistence.conversationId) {
+        openTab(persistence.conversationId);
       }
 
       const userMsg: Message = {

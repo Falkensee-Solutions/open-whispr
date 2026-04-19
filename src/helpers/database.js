@@ -475,6 +475,11 @@ class DatabaseManager {
       } catch (err) {
         if (!err.message.includes("duplicate column")) throw err;
       }
+      try {
+        this.db.exec("ALTER TABLE agent_conversations ADD COLUMN foundry_conversation_id TEXT");
+      } catch (err) {
+        if (!err.message.includes("duplicate column")) throw err;
+      }
 
       // Sync columns for transcriptions
       try {

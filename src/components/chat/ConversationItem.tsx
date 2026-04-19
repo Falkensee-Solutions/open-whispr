@@ -56,8 +56,7 @@ export default function ConversationItem({
   const isArchived = !!conversation.is_archived;
 
   return (
-    <button
-      type="button"
+    <div
       onClick={onClick}
       className={cn(
         "group relative w-full text-left px-3 py-2 cursor-pointer transition-all duration-150",
@@ -126,6 +125,6 @@ export default function ConversationItem({
           </p>
         )}
       </div>
-    </button>
+    </div>
   );
 }

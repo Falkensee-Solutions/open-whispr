@@ -2295,5 +2295,30 @@
     "endpointPlaceholder": "Azureエンドポイント（例: https://myresource.openai.azure.com）",
     "deploymentPlaceholder": "デプロイメント名（例: whisper）",
     "reasoningDeploymentPlaceholder": "チャットデプロイメント名（例: gpt-4o）"
+  },
+  "foundry": {
+    "settings": {
+      "title": "Azure AI Foundry Agents",
+      "description": "Connect to your Azure AI Foundry agents for AI-powered conversations",
+      "enabled": "Enable Foundry Agents",
+      "enabledDescription": "Route agent chat through Azure AI Foundry Agent Service",
+      "endpoint": "Project Endpoint",
+      "endpointHint": "Copy from AI Foundry portal → Project → Overview. Format: https://your-resource.services.ai.azure.com/api/projects/your-project",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter your Azure Foundry API key",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "connected": "Connected — {{count}} agent(s) found",
+      "defaultAgent": "Default Agent",
+      "selectAgent": "Select an agent...",
+      "agentName": "Agent Name",
+      "agentNamePlaceholder": "e.g. mailauthor",
+      "agentNameHint": "Enter the exact agent name as shown in the AI Foundry portal"
+    },
+    "picker": {
+      "selectAgent": "Select agent",
+      "loading": "Loading agents...",
+      "noAgents": "No agents found"
+    }
   }
 }

@@ -2295,5 +2295,30 @@
     "endpointPlaceholder": "Endpoint Azure (es., https://myresource.openai.azure.com)",
     "deploymentPlaceholder": "Nome distribuzione (es., whisper)",
     "reasoningDeploymentPlaceholder": "Nome distribuzione chat (es., gpt-4o)"
+  },
+  "foundry": {
+    "settings": {
+      "title": "Azure AI Foundry Agents",
+      "description": "Connect to your Azure AI Foundry agents for AI-powered conversations",
+      "enabled": "Enable Foundry Agents",
+      "enabledDescription": "Route agent chat through Azure AI Foundry Agent Service",
+      "endpoint": "Project Endpoint",
+      "endpointHint": "Copy from AI Foundry portal → Project → Overview. Format: https://your-resource.services.ai.azure.com/api/projects/your-project",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter your Azure Foundry API key",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "connected": "Connected — {{count}} agent(s) found",
+      "defaultAgent": "Default Agent",
+      "selectAgent": "Select an agent...",
+      "agentName": "Agent Name",
+      "agentNamePlaceholder": "e.g. mailauthor",
+      "agentNameHint": "Enter the exact agent name as shown in the AI Foundry portal"
+    },
+    "picker": {
+      "selectAgent": "Select agent",
+      "loading": "Loading agents...",
+      "noAgents": "No agents found"
+    }
   }
 }

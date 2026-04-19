@@ -836,6 +836,35 @@ declare global {
       getAzureReasoningDeploymentName: () => Promise<string | null>;
       saveAzureReasoningDeploymentName: (name: string) => Promise<void>;
 
+      // Azure Foundry Agent Service
+      getAzureFoundryEndpoint?: () => Promise<string | null>;
+      saveAzureFoundryEndpoint?: (endpoint: string) => Promise<void>;
+      getAzureFoundryApiKey?: () => Promise<string | null>;
+      saveAzureFoundryApiKey?: (key: string) => Promise<void>;
+      listFoundryAgents?: (
+        endpoint?: string,
+        apiKey?: string
+      ) => Promise<
+        { id: string; name: string; description: string; model?: string }[]
+      >;
+      createFoundryConversation?: (
+        endpoint?: string,
+        apiKey?: string
+      ) => Promise<{ id: string }>;
+      deleteFoundryConversation?: (conversationId: string) => Promise<void>;
+      startFoundryAgentStream?: (
+        conversationId: string,
+        agentName: string,
+        input: string,
+        endpoint?: string,
+        apiKey?: string
+      ) => void;
+      onFoundryAgentStreamChunk?: (
+        callback: (chunk: { type: string; text: string }) => void
+      ) => (() => void) | undefined;
+      onFoundryAgentStreamEnd?: (callback: () => void) => (() => void) | undefined;
+      onFoundryAgentStreamError?: (callback: (error: string) => void) => (() => void) | undefined;
+
       // Custom endpoint API keys
       getCustomTranscriptionKey?: () => Promise<string | null>;
       saveCustomTranscriptionKey?: (key: string) => Promise<void>;

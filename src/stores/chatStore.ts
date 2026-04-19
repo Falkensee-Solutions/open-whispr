@@ -15,12 +15,16 @@ interface ChatState {
   conversations: ConversationItem[];
   activeConversationId: number | null;
   migration: { total: number; done: number } | null;
+  openTabs: number[];
+  activeTabId: number | null;
 }
 
 const useChatStore = create<ChatState>()(() => ({
   conversations: [],
   activeConversationId: null,
   migration: null,
+  openTabs: [],
+  activeTabId: null,
 }));
 
 export async function initializeConversations(limit = 50): Promise<ConversationItem[]> {
@@ -123,4 +127,39 @@ export async function startConversationMigration(): Promise<void> {
   }
 
   useChatStore.setState({ migration: null });
+}
+
+// ── Tab management ──────────────────────────────────────────
+
+export function openTab(conversationId: number): void {
+  const { openTabs } = useChatStore.getState();
+  if (!openTabs.includes(conversationId)) {
+    useChatStore.setState({ openTabs: [...openTabs, conversationId] });
+  }
+  useChatStore.setState({ activeTabId: conversationId, activeConversationId: conversationId });
+}
+
+export function closeTab(conversationId: number): void {
+  const { openTabs, activeTabId } = useChatStore.getState();
+  const next = openTabs.filter((id) => id !== conversationId);
+  const update: Partial<ChatState> = { openTabs: next };
+  if (activeTabId === conversationId) {
+    const idx = openTabs.indexOf(conversationId);
+    const neighbor = next[Math.min(idx, next.length - 1)] ?? null;
+    update.activeTabId = neighbor;
+    update.activeConversationId = neighbor;
+  }
+  useChatStore.setState(update);
+}
+
+export function switchTab(conversationId: number): void {
+  useChatStore.setState({ activeTabId: conversationId, activeConversationId: conversationId });
+}
+
+export function useOpenTabs(): number[] {
+  return useChatStore((s) => s.openTabs);
+}
+
+export function useActiveTabId(): number | null {
+  return useChatStore((s) => s.activeTabId);
 }

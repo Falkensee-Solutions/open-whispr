@@ -1,4 +1,5 @@
 import { ChatInput } from "../chat/ChatInput";
+import { AgentPicker } from "./AgentPicker";
 import type { AgentState } from "../chat/types";
 
 interface AgentInputProps {
@@ -9,5 +10,12 @@ interface AgentInputProps {
 }
 
 export function AgentInput(props: AgentInputProps) {
-  return <ChatInput {...props} autoFocus />;
+  return (
+    <div className="flex flex-col">
+      <ChatInput {...props} autoFocus />
+      <div className="flex items-center px-3 pb-1.5">
+        <AgentPicker />
+      </div>
+    </div>
+  );
 }

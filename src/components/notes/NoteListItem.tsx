@@ -113,8 +113,7 @@ export default function NoteListItem({
   );
 
   return (
-    <button
-      type="button"
+    <div
       onClick={onClick}
       {...dragHandlers}
       className={cn(
@@ -288,6 +287,6 @@ export default function NoteListItem({
           </p>
         )}
       </div>
-    </button>
+    </div>
   );
 }

@@ -2295,6 +2295,84 @@ class IPCHandlers {
       return this.environmentManager.saveAzureReasoningDeploymentName(name);
     });
 
+    // ── Azure Foundry Agent Service ──────────────────────────────────
+    ipcMain.handle("get-azure-foundry-endpoint", async () => {
+      return this.environmentManager.getAzureFoundryEndpoint();
+    });
+
+    ipcMain.handle("save-azure-foundry-endpoint", async (event, endpoint) => {
+      return this.environmentManager.saveAzureFoundryEndpoint(endpoint);
+    });
+
+    ipcMain.handle("get-azure-foundry-api-key", async () => {
+      return this.environmentManager.getAzureFoundryApiKey();
+    });
+
+    ipcMain.handle("save-azure-foundry-api-key", async (event, key) => {
+      return this.environmentManager.saveAzureFoundryApiKey(key);
+    });
+
+    ipcMain.handle("list-foundry-agents", async (event, endpointArg, apiKeyArg) => {
+      const foundryService = require("./foundryAgentService");
+      const endpoint = endpointArg || this.environmentManager.getAzureFoundryEndpoint();
+      const apiKey = apiKeyArg || this.environmentManager.getAzureFoundryApiKey();
+      if (!endpoint || !apiKey) {
+        throw new Error("Azure Foundry endpoint and API key must be configured");
+      }
+      return foundryService.listAgents(endpoint, apiKey);
+    });
+
+    ipcMain.handle("create-foundry-conversation", async (event, endpointArg, apiKeyArg) => {
+      const foundryService = require("./foundryAgentService");
+      const endpoint = endpointArg || this.environmentManager.getAzureFoundryEndpoint();
+      const apiKey = apiKeyArg || this.environmentManager.getAzureFoundryApiKey();
+      if (!endpoint || !apiKey) {
+        throw new Error("Azure Foundry endpoint and API key must be configured");
+      }
+      return foundryService.createConversation(endpoint, apiKey);
+    });
+
+    ipcMain.handle("delete-foundry-conversation", async (event, conversationId) => {
+      const foundryService = require("./foundryAgentService");
+      const endpoint = this.environmentManager.getAzureFoundryEndpoint();
+      const apiKey = this.environmentManager.getAzureFoundryApiKey();
+      if (!endpoint || !apiKey) return;
+      try {
+        await foundryService.deleteConversation(endpoint, apiKey, conversationId);
+      } catch (err) {
+        debugLogger.log("[foundry] Failed to delete conversation:", err.message);
+      }
+    });
+
+    ipcMain.on("foundry-agent-stream-start", (event, conversationId, agentName, input, endpointArg, apiKeyArg) => {
+      const foundryService = require("./foundryAgentService");
+      const endpoint = endpointArg || this.environmentManager.getAzureFoundryEndpoint();
+      const apiKey = apiKeyArg || this.environmentManager.getAzureFoundryApiKey();
+
+      if (!endpoint || !apiKey) {
+        event.sender.send("foundry-agent-stream-error", "Azure Foundry endpoint and API key must be configured");
+        return;
+      }
+
+      foundryService.streamMessage(endpoint, apiKey, conversationId, agentName, input, {
+        onChunk: (text) => {
+          if (!event.sender.isDestroyed()) {
+            event.sender.send("foundry-agent-stream-chunk", { type: "content", text });
+          }
+        },
+        onDone: (fullText) => {
+          if (!event.sender.isDestroyed()) {
+            event.sender.send("foundry-agent-stream-end");
+          }
+        },
+        onError: (err) => {
+          if (!event.sender.isDestroyed()) {
+            event.sender.send("foundry-agent-stream-error", err.message || String(err));
+          }
+        },
+      });
+    });
+
     ipcMain.handle(
       "proxy-mistral-transcription",
       async (event, { audioBuffer, model, language, contextBias }) => {

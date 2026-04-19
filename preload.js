@@ -363,6 +363,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getAzureReasoningDeploymentName: () => ipcRenderer.invoke("get-azure-reasoning-deployment-name"),
   saveAzureReasoningDeploymentName: (name) => ipcRenderer.invoke("save-azure-reasoning-deployment-name", name),
 
+  // Azure Foundry Agent Service
+  getAzureFoundryEndpoint: () => ipcRenderer.invoke("get-azure-foundry-endpoint"),
+  saveAzureFoundryEndpoint: (endpoint) => ipcRenderer.invoke("save-azure-foundry-endpoint", endpoint),
+  getAzureFoundryApiKey: () => ipcRenderer.invoke("get-azure-foundry-api-key"),
+  saveAzureFoundryApiKey: (key) => ipcRenderer.invoke("save-azure-foundry-api-key", key),
+  listFoundryAgents: (endpoint, apiKey) => ipcRenderer.invoke("list-foundry-agents", endpoint, apiKey),
+  startFoundryAgentStream: (conversationId, agentName, input, endpoint, apiKey) =>
+    ipcRenderer.send("foundry-agent-stream-start", conversationId, agentName, input, endpoint, apiKey),
+  createFoundryConversation: (endpoint, apiKey) => ipcRenderer.invoke("create-foundry-conversation", endpoint, apiKey),
+  deleteFoundryConversation: (conversationId) => ipcRenderer.invoke("delete-foundry-conversation", conversationId),
+  onFoundryAgentStreamChunk: registerListener(
+    "foundry-agent-stream-chunk",
+    (callback) => (_event, chunk) => callback(chunk)
+  ),
+  onFoundryAgentStreamError: registerListener(
+    "foundry-agent-stream-error",
+    (callback) => (_event, error) => callback(error)
+  ),
+  onFoundryAgentStreamEnd: registerListener("foundry-agent-stream-end", (callback) => () => callback()),
+
   // Custom endpoint API keys
   getCustomTranscriptionKey: () => ipcRenderer.invoke("get-custom-transcription-key"),
   saveCustomTranscriptionKey: (key) => ipcRenderer.invoke("save-custom-transcription-key", key),

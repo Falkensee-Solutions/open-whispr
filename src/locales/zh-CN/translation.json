@@ -1013,7 +1013,12 @@
           "annualEquivalent": "$16.67",
           "includesPrefix": "所有 Pro 功能 +",
           "badge": "最受欢迎",
-          "features": ["无限会议录制", "代理模式", "与您的数据对话", "优先支持"],
+          "features": [
+            "无限会议录制",
+            "代理模式",
+            "与您的数据对话",
+            "优先支持"
+          ],
           "cta": "开始使用",
           "switchToAnnual": "切换为年付"
         },
@@ -2290,5 +2295,30 @@
     "endpointPlaceholder": "Azure 终结点（例如 https://myresource.openai.azure.com）",
     "deploymentPlaceholder": "部署名称（例如 whisper）",
     "reasoningDeploymentPlaceholder": "聊天部署名称（例如 gpt-4o）"
+  },
+  "foundry": {
+    "settings": {
+      "title": "Azure AI Foundry Agents",
+      "description": "Connect to your Azure AI Foundry agents for AI-powered conversations",
+      "enabled": "Enable Foundry Agents",
+      "enabledDescription": "Route agent chat through Azure AI Foundry Agent Service",
+      "endpoint": "Project Endpoint",
+      "endpointHint": "Copy from AI Foundry portal → Project → Overview. Format: https://your-resource.services.ai.azure.com/api/projects/your-project",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter your Azure Foundry API key",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "connected": "Connected — {{count}} agent(s) found",
+      "defaultAgent": "Default Agent",
+      "selectAgent": "Select an agent...",
+      "agentName": "Agent Name",
+      "agentNamePlaceholder": "e.g. mailauthor",
+      "agentNameHint": "Enter the exact agent name as shown in the AI Foundry portal"
+    },
+    "picker": {
+      "selectAgent": "Select agent",
+      "loading": "Loading agents...",
+      "noAgents": "No agents found"
+    }
   }
 }

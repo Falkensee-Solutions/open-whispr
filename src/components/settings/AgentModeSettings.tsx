@@ -1,6 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Cloud, Key, Cpu, Network } from "lucide-react";
+import { Cloud, Key, Cpu, Network, Bot } from "lucide-react";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { HotkeyInput } from "../ui/HotkeyInput";
 import { Toggle } from "../ui/toggle";
@@ -59,6 +59,14 @@ export default function AgentModeSettings() {
     setCustomReasoningApiKey,
     cloudReasoningBaseUrl,
     setCloudReasoningBaseUrl,
+    azureFoundryEndpoint,
+    setAzureFoundryEndpoint,
+    azureFoundryApiKey,
+    setAzureFoundryApiKey,
+    azureFoundryEnabled,
+    setAzureFoundryEnabled,
+    selectedFoundryAgent,
+    setSelectedFoundryAgent,
   } = useSettingsStore();
 
   const validateAgentHotkey = useCallback(
@@ -73,6 +81,30 @@ export default function AgentModeSettings() {
       ),
     [dictationKey, meetingKey, t]
   );
+
+  // Foundry connection test
+  const [foundryAgents, setFoundryAgents] = useState<{ id: string; name: string; description: string }[]>([]);
+  const [foundryTestStatus, setFoundryTestStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [foundryTestError, setFoundryTestError] = useState("");
+
+  const testFoundryConnection = useCallback(async () => {
+    setFoundryTestStatus("loading");
+    setFoundryTestError("");
+    try {
+      // Pass current values directly to avoid race with env persistence
+      const agents = await window.electronAPI?.listFoundryAgents?.(
+        azureFoundryEndpoint,
+        azureFoundryApiKey
+      );
+      setFoundryAgents(agents || []);
+      setFoundryTestStatus("success");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setFoundryTestError(msg);
+      setFoundryTestStatus("error");
+      setFoundryAgents([]);
+    }
+  }, [azureFoundryEndpoint, azureFoundryApiKey]);
 
   const agentModes: InferenceModeOption[] = [
     {
@@ -206,6 +238,117 @@ export default function AgentModeSettings() {
                   className="w-full text-xs bg-transparent border border-border/50 rounded-md px-3 py-2 resize-y focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary/30 placeholder:text-muted-foreground/50"
                 />
               </SettingsPanelRow>
+            </SettingsPanel>
+          </div>
+
+          {/* Azure Foundry Agent Service */}
+          <div>
+            <SectionHeader
+              title={t("foundry.settings.title")}
+              description={t("foundry.settings.description")}
+            />
+            <SettingsPanel>
+              <SettingsPanelRow>
+                <SettingsRow
+                  label={t("foundry.settings.enabled")}
+                  description={t("foundry.settings.enabledDescription")}
+                >
+                  <Toggle checked={azureFoundryEnabled} onChange={setAzureFoundryEnabled} />
+                </SettingsRow>
+              </SettingsPanelRow>
+
+              {azureFoundryEnabled && (
+                <>
+                  <SettingsPanelRow>
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("foundry.settings.endpoint")}
+                    </label>
+                    <input
+                      type="url"
+                      value={azureFoundryEndpoint}
+                      onChange={(e) => setAzureFoundryEndpoint(e.target.value)}
+                      placeholder="https://your-resource.services.ai.azure.com/api/projects/your-project"
+                      className="w-full text-xs bg-transparent border border-border/50 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary/30 placeholder:text-muted-foreground/50"
+                    />
+                    <p className="text-[10px] text-muted-foreground/70 mt-1">
+                      {t("foundry.settings.endpointHint")}
+                    </p>
+                  </SettingsPanelRow>
+
+                  <SettingsPanelRow>
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("foundry.settings.apiKey")}
+                    </label>
+                    <input
+                      type="password"
+                      value={azureFoundryApiKey}
+                      onChange={(e) => setAzureFoundryApiKey(e.target.value)}
+                      placeholder={t("foundry.settings.apiKeyPlaceholder")}
+                      className="w-full text-xs bg-transparent border border-border/50 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary/30 placeholder:text-muted-foreground/50"
+                    />
+                  </SettingsPanelRow>
+
+                  <SettingsPanelRow>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={testFoundryConnection}
+                        disabled={!azureFoundryEndpoint || !azureFoundryApiKey || foundryTestStatus === "loading"}
+                        className="text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {foundryTestStatus === "loading"
+                          ? t("foundry.settings.testing")
+                          : t("foundry.settings.testConnection")}
+                      </button>
+                      {foundryTestStatus === "success" && (
+                        <span className="text-xs text-green-500">
+                          {t("foundry.settings.connected", { count: foundryAgents.length })}
+                        </span>
+                      )}
+                      {foundryTestStatus === "error" && (
+                        <span className="text-xs text-destructive">{foundryTestError}</span>
+                      )}
+                    </div>
+                  </SettingsPanelRow>
+
+                  {foundryAgents.length > 0 && (
+                    <SettingsPanelRow>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        {t("foundry.settings.defaultAgent")}
+                      </label>
+                      <select
+                        value={selectedFoundryAgent}
+                        onChange={(e) => setSelectedFoundryAgent(e.target.value)}
+                        aria-label={t("foundry.settings.defaultAgent")}
+                        className="w-full text-xs bg-transparent border border-border/50 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary/30"
+                      >
+                        <option value="">{t("foundry.settings.selectAgent")}</option>
+                        {foundryAgents.map((agent) => (
+                          <option key={agent.id || agent.name} value={agent.name}>
+                            {agent.name}
+                            {agent.description ? ` — ${agent.description}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </SettingsPanelRow>
+                  )}
+
+                  <SettingsPanelRow>
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("foundry.settings.agentName")}
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedFoundryAgent}
+                      onChange={(e) => setSelectedFoundryAgent(e.target.value)}
+                      placeholder={t("foundry.settings.agentNamePlaceholder")}
+                      className="w-full text-xs bg-transparent border border-border/50 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary/30 placeholder:text-muted-foreground/50"
+                    />
+                    <p className="text-[10px] text-muted-foreground/70 mt-1">
+                      {t("foundry.settings.agentNameHint")}
+                    </p>
+                  </SettingsPanelRow>
+                </>
+              )}
             </SettingsPanel>
           </div>
         </>

@@ -84,16 +84,114 @@ export function useChatStreaming({
 
   const cancelStream = useCallback(() => {
     ReasoningService.cancelActiveStream();
+    foundryAbortRef.current?.();
+    foundryAbortRef.current = null;
     setAgentState("idle");
     setToolStatus("");
     setActiveToolName("");
   }, []);
+
+  // Ref for Foundry stream abort
+  const foundryAbortRef = useRef<(() => void) | null>(null);
 
   const sendToAI = useCallback(
     async (userText: string, allMessages: Message[]) => {
       setAgentState("thinking");
 
       const settings = getSettings();
+
+      // ── Azure Foundry Agent path ──────────────────────────────
+      if (settings.azureFoundryEnabled && settings.selectedFoundryAgent) {
+        const assistantId = crypto.randomUUID();
+        setMessages((prev) => [
+          ...prev,
+          { id: assistantId, role: "assistant", content: "", isStreaming: true },
+        ]);
+        setAgentState("streaming");
+
+        // Ensure we have a Foundry conversation
+        let foundryConvId: string | null = null;
+        try {
+          const conv = await window.electronAPI?.createFoundryConversation?.(
+            settings.azureFoundryEndpoint,
+            settings.azureFoundryApiKey
+          );
+          foundryConvId = conv?.id ?? null;
+        } catch {
+          // fall through — will try without conversation
+        }
+
+        return new Promise<void>((resolve) => {
+          let fullContent = "";
+
+          const cleanupChunk = window.electronAPI?.onFoundryAgentStreamChunk?.(
+            (chunk: { type: string; text: string }) => {
+              if (!mountedRef.current) return;
+              if (chunk.type === "content") {
+                fullContent += chunk.text;
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m))
+                );
+              }
+            }
+          );
+
+          const cleanupEnd = window.electronAPI?.onFoundryAgentStreamEnd?.(() => {
+            if (mountedRef.current) {
+              setMessages((prev) =>
+                prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m))
+              );
+              onStreamComplete?.(assistantId, fullContent);
+            }
+            setAgentState("idle");
+            cleanupChunk?.();
+            cleanupEnd?.();
+            cleanupError?.();
+            foundryAbortRef.current = null;
+            resolve();
+          });
+
+          const cleanupError = window.electronAPI?.onFoundryAgentStreamError?.(
+            (errMsg: string) => {
+              if (mountedRef.current) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? {
+                          ...m,
+                          content: `${t("agentMode.chat.errorPrefix")}: ${errMsg}`,
+                          isStreaming: false,
+                        }
+                      : m
+                  )
+                );
+              }
+              setAgentState("idle");
+              cleanupChunk?.();
+              cleanupEnd?.();
+              cleanupError?.();
+              foundryAbortRef.current = null;
+              resolve();
+            }
+          );
+
+          foundryAbortRef.current = () => {
+            cleanupChunk?.();
+            cleanupEnd?.();
+            cleanupError?.();
+          };
+
+          window.electronAPI?.startFoundryAgentStream?.(
+            foundryConvId || "",
+            settings.selectedFoundryAgent,
+            userText,
+            settings.azureFoundryEndpoint,
+            settings.azureFoundryApiKey
+          );
+        });
+      }
+
+      // ── Existing provider paths ──────────────────────────────
       const agentMode = settings.agentInferenceMode || "openwhispr";
       const isCloudAgent = agentMode === "openwhispr" && settings.isSignedIn;
       const isLanAgent = agentMode === "self-hosted" && !!settings.remoteAgentUrl;

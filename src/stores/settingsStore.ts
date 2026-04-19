@@ -273,6 +273,16 @@ export interface SettingsState
   setAgentInferenceMode: (mode: InferenceMode) => void;
   setRemoteAgentUrl: (url: string) => void;
 
+  // Azure Foundry
+  azureFoundryEndpoint: string;
+  azureFoundryApiKey: string;
+  azureFoundryEnabled: boolean;
+  selectedFoundryAgent: string;
+  setAzureFoundryEndpoint: (value: string) => void;
+  setAzureFoundryApiKey: (value: string) => void;
+  setAzureFoundryEnabled: (value: boolean) => void;
+  setSelectedFoundryAgent: (value: string) => void;
+
   updateTranscriptionSettings: (settings: Partial<TranscriptionSettings>) => void;
   updateReasoningSettings: (settings: Partial<ReasoningSettings>) => void;
   updateApiKeys: (keys: Partial<ApiKeySettings>) => void;
@@ -480,6 +490,12 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     return "openwhispr" as InferenceMode;
   })(),
   remoteAgentUrl: readString("remoteAgentUrl", ""),
+
+  // Azure Foundry defaults
+  azureFoundryEndpoint: readString("azureFoundryEndpoint", ""),
+  azureFoundryApiKey: readString("azureFoundryApiKey", ""),
+  azureFoundryEnabled: readBoolean("azureFoundryEnabled", false),
+  selectedFoundryAgent: readString("selectedFoundryAgent", ""),
 
   setUseLocalWhisper: createBooleanSetter("useLocalWhisper"),
   setWhisperModel: createStringSetter("whisperModel"),
@@ -805,6 +821,20 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setAgentInferenceMode: createStringSetter("agentInferenceMode") as (mode: InferenceMode) => void,
   setRemoteAgentUrl: createStringSetter("remoteAgentUrl"),
 
+  // Azure Foundry setters
+  setAzureFoundryEndpoint: (value: string) => {
+    if (isBrowser) localStorage.setItem("azureFoundryEndpoint", value);
+    useSettingsStore.setState({ azureFoundryEndpoint: value });
+    window.electronAPI?.saveAzureFoundryEndpoint?.(value)?.catch?.(() => {});
+  },
+  setAzureFoundryApiKey: (value: string) => {
+    if (isBrowser) localStorage.setItem("azureFoundryApiKey", value);
+    useSettingsStore.setState({ azureFoundryApiKey: value });
+    window.electronAPI?.saveAzureFoundryApiKey?.(value)?.catch?.(() => {});
+  },
+  setAzureFoundryEnabled: createBooleanSetter("azureFoundryEnabled"),
+  setSelectedFoundryAgent: createStringSetter("selectedFoundryAgent"),
+
   updateTranscriptionSettings: (settings: Partial<TranscriptionSettings>) => {
     const s = useSettingsStore.getState();
     if (settings.useLocalWhisper !== undefined) s.setUseLocalWhisper(settings.useLocalWhisper);
@@ -969,6 +999,16 @@ export async function initializeSettings(): Promise<void> {
       if (!state.customReasoningApiKey) {
         const envKey = await window.electronAPI.getCustomReasoningKey?.();
         if (envKey) createStringSetter("customReasoningApiKey")(envKey);
+      }
+
+      // Foundry settings: always prefer .env so portal/CLI updates take effect
+      {
+        const envEndpoint = await window.electronAPI.getAzureFoundryEndpoint?.();
+        if (envEndpoint) createStringSetter("azureFoundryEndpoint")(envEndpoint);
+      }
+      {
+        const envKey = await window.electronAPI.getAzureFoundryApiKey?.();
+        if (envKey) createStringSetter("azureFoundryApiKey")(envKey);
       }
     } catch (err) {
       logger.warn(

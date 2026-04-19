@@ -696,7 +696,7 @@ class WindowManager {
     if (!this.agentWindow || this.agentWindow.isDestroyed()) return;
 
     if (this.agentWindow.isVisible()) {
-      this.agentWindow.webContents.send("agent-toggle-recording");
+      this.hideAgentOverlay();
     } else {
       this.showAgentOverlay();
     }

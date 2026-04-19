@@ -10,6 +10,12 @@ const PERSISTED_KEYS = [
   "GEMINI_API_KEY",
   "GROQ_API_KEY",
   "MISTRAL_API_KEY",
+  "AZURE_API_KEY",
+  "AZURE_ENDPOINT",
+  "AZURE_DEPLOYMENT_NAME",
+  "AZURE_REASONING_DEPLOYMENT_NAME",
+  "AZURE_FOUNDRY_ENDPOINT",
+  "AZURE_FOUNDRY_API_KEY",
   "CUSTOM_TRANSCRIPTION_API_KEY",
   "CUSTOM_REASONING_API_KEY",
   "LOCAL_TRANSCRIPTION_PROVIDER",
@@ -118,7 +124,9 @@ class EnvironmentManager {
   }
 
   saveAzureKey(key) {
-    return this._saveKey("AZURE_API_KEY", key);
+    const result = this._saveKey("AZURE_API_KEY", key);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
   }
 
   getAzureEndpoint() {
@@ -126,7 +134,9 @@ class EnvironmentManager {
   }
 
   saveAzureEndpoint(endpoint) {
-    return this._saveKey("AZURE_ENDPOINT", endpoint);
+    const result = this._saveKey("AZURE_ENDPOINT", endpoint);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
   }
 
   getAzureDeploymentName() {
@@ -134,7 +144,9 @@ class EnvironmentManager {
   }
 
   saveAzureDeploymentName(name) {
-    return this._saveKey("AZURE_DEPLOYMENT_NAME", name);
+    const result = this._saveKey("AZURE_DEPLOYMENT_NAME", name);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
   }
 
   getAzureReasoningDeploymentName() {
@@ -142,7 +154,29 @@ class EnvironmentManager {
   }
 
   saveAzureReasoningDeploymentName(name) {
-    return this._saveKey("AZURE_REASONING_DEPLOYMENT_NAME", name);
+    const result = this._saveKey("AZURE_REASONING_DEPLOYMENT_NAME", name);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
+  }
+
+  getAzureFoundryEndpoint() {
+    return this._getKey("AZURE_FOUNDRY_ENDPOINT");
+  }
+
+  saveAzureFoundryEndpoint(endpoint) {
+    const result = this._saveKey("AZURE_FOUNDRY_ENDPOINT", endpoint);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
+  }
+
+  getAzureFoundryApiKey() {
+    return this._getKey("AZURE_FOUNDRY_API_KEY");
+  }
+
+  saveAzureFoundryApiKey(key) {
+    const result = this._saveKey("AZURE_FOUNDRY_API_KEY", key);
+    this.saveAllKeysToEnvFile().catch(() => {});
+    return result;
   }
 
   getCustomTranscriptionKey() {
