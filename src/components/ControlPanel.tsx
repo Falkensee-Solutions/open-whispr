@@ -618,7 +618,6 @@ export default function ControlPanel() {
               setSettingsSection("plansBilling");
               setShowSettings(true);
             }}
-            onUpgradeCheckout={() => usage?.openCheckout()}
             isOverLimit={usage?.isOverLimit ?? false}
             userName={user?.name}
             userEmail={user?.email}

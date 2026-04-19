@@ -12,11 +12,11 @@
     },
     "noteFiles": {
       "title": "Notizen als Dateien speichern",
-      "description": "Notizen automatisch als .md-Dateien auf der Festplatte speichern, nach Ordner sortiert",
+      "description": "Notizen und Transkripte automatisch als Dateien auf der Festplatte speichern, nach Ordner sortiert",
       "path": "Speicherort",
       "changePath": "Speicherort ändern",
       "rebuild": "Alle Dateien neu erstellen",
-      "rebuildDescription": "Alle Notizen erneut auf die Festplatte synchronisieren"
+      "rebuildDescription": "Alle Notizen und Transkripte erneut auf die Festplatte synchronisieren"
     }
   },
   "tray": {
@@ -133,6 +133,7 @@
     "cancel": "Abbrechen",
     "recommended": "Empfohlen",
     "active": "Aktiv",
+    "freeAccountRequired": "Kostenloses Konto erforderlich",
     "cloud": "Cloud",
     "local": "Lokal",
     "apiKey": "API-Schlüssel",
@@ -1417,6 +1418,10 @@
       "usageAnalyticsDescription": "Helfen Sie uns, OpenWhispr zu verbessern, indem Sie anonyme Leistungsdaten teilen. Wir senden niemals Transkriptionsinhalte – nur Timing- und Fehlerdaten.",
       "dataRetention": "Datenaufbewahrung",
       "dataRetentionDescription": "Transkriptionen und Audio lokal im Verlauf speichern. Wenn deaktiviert, werden Transkriptionen eingefügt, aber nicht gespeichert.",
+      "hoursAgo": "vor {{count}} Std.",
+      "justNow": "gerade eben",
+      "lastSynced": "Zuletzt synchronisiert {{time}}",
+      "minutesAgo": "vor {{count}} Min.",
       "audioRetention": "Audio-Aufbewahrung",
       "audioRetentionDescription": "Audioaufnahmen lokal für erneute Transkription und Download speichern. Dateien werden nach Ablauf der Aufbewahrungsfrist automatisch gelöscht.",
       "audioRetentionDisabled": "Deaktiviert",
@@ -1687,6 +1692,7 @@
       "asTranscriptText": "Als Textdatei (.txt)",
       "asSubtitles": "Als Untertitel (.srt)",
       "asJson": "Als JSON (.json)",
+      "asTranscriptMarkdown": "Als Markdown (.md)",
       "raw": "Roh",
       "enhanced": "Verbessert",
       "saving": "Wird gespeichert",
@@ -1736,6 +1742,7 @@
       "selectFolder": "Ordner auswählen",
       "transcriptionFailed": "Transkription fehlgeschlagen",
       "errorOccurred": "Ein Fehler ist aufgetreten",
+      "noSpeechDetected": "In dieser Audiodatei wurde keine Sprache erkannt.",
       "noProviderTitle": "Kein Transkriptionsanbieter eingerichtet",
       "noProviderDescription": "Fügen Sie einen API-Schlüssel hinzu oder laden Sie ein lokales Modell herunter, um mit der Transkription zu beginnen.",
       "noProviderAction": "Transkriptionseinstellungen öffnen",
@@ -1898,7 +1905,7 @@
     "support": "Support",
     "limitReached": "Wochenlimit erreicht",
     "limitReachedDescription": "Upgraden Sie auf Pro für unbegrenzte Transkriptionen.",
-    "upgradeToPro": "Auf Pro upgraden",
+    "viewPlans": "Tarife ansehen",
     "upgradeTitle": "Auf Pro upgraden",
     "upgradeDescription": "Unbegrenzte Transkriptionen und mehr.",
     "learnMore": "Mehr erfahren",

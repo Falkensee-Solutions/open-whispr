@@ -12,11 +12,11 @@
     },
     "noteFiles": {
       "title": "Salva note come file",
-      "description": "Salva automaticamente le note come file .md su disco, organizzate per cartella",
+      "description": "Salva automaticamente note e trascrizioni come file su disco, organizzati per cartella",
       "path": "Percorso di salvataggio",
       "changePath": "Cambia percorso",
       "rebuild": "Ricostruisci tutti i file",
-      "rebuildDescription": "Risincronizza tutte le note su disco"
+      "rebuildDescription": "Risincronizza tutte le note e trascrizioni su disco"
     }
   },
   "tray": {
@@ -133,6 +133,7 @@
     "cancel": "Annulla",
     "recommended": "Consigliato",
     "active": "Attivo",
+    "freeAccountRequired": "Account gratuito richiesto",
     "cloud": "Cloud",
     "local": "Locale",
     "apiKey": "Chiave API",
@@ -1417,6 +1418,10 @@
       "usageAnalyticsDescription": "Aiutaci a migliorare OpenWhispr condividendo metriche di prestazione anonime. Non inviamo mai il contenuto delle trascrizioni, solo dati su tempi ed errori.",
       "dataRetention": "Conservazione dei dati",
       "dataRetentionDescription": "Salva trascrizioni e audio localmente nella cronologia. Se disattivato, le trascrizioni vengono incollate ma non salvate.",
+      "hoursAgo": "{{count}}h fa",
+      "justNow": "adesso",
+      "lastSynced": "Ultima sincronizzazione {{time}}",
+      "minutesAgo": "{{count}}m fa",
       "audioRetention": "Conservazione audio",
       "audioRetentionDescription": "Salva le registrazioni audio localmente per la ritrascrizione e il download. I file vengono eliminati automaticamente al termine del periodo di conservazione.",
       "audioRetentionDisabled": "Disattivato",
@@ -1687,6 +1692,7 @@
       "asTranscriptText": "Come testo semplice (.txt)",
       "asSubtitles": "Come sottotitoli (.srt)",
       "asJson": "Come JSON (.json)",
+      "asTranscriptMarkdown": "Come Markdown (.md)",
       "raw": "Originale",
       "enhanced": "Migliorato",
       "saving": "Salvataggio",
@@ -1736,6 +1742,7 @@
       "selectFolder": "Seleziona cartella",
       "transcriptionFailed": "Trascrizione non riuscita",
       "errorOccurred": "Si è verificato un errore",
+      "noSpeechDetected": "Nessun parlato rilevato in questo audio.",
       "noProviderTitle": "Nessun provider di trascrizione configurato",
       "noProviderDescription": "Aggiungi una chiave API o scarica un modello locale per iniziare a trascrivere.",
       "noProviderAction": "Apri impostazioni di trascrizione",
@@ -1898,7 +1905,7 @@
     "support": "Assistenza",
     "limitReached": "Limite settimanale raggiunto",
     "limitReachedDescription": "Passa a Pro per trascrizioni illimitate.",
-    "upgradeToPro": "Passa a Pro",
+    "viewPlans": "Vedi i piani",
     "upgradeTitle": "Passa a Pro",
     "upgradeDescription": "Trascrizioni illimitate e funzionalità avanzate.",
     "learnMore": "Scopri di più",

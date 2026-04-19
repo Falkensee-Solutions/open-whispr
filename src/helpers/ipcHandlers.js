@@ -1,5 +1,7 @@
 const { ipcMain, app, shell, BrowserWindow, systemPreferences } = require("electron");
 const path = require("path");
+const fs = require("fs");
+const os = require("os");
 const http = require("http");
 const https = require("https");
 const crypto = require("crypto");
@@ -55,6 +57,10 @@ const AUDIO_MIME_TYPES = {
 
 // Formats natively accepted by most speech-to-text APIs (OpenAI, Groq, etc.)
 const API_NATIVE_FORMATS = new Set(["mp3", "wav", "m4a", "webm", "ogg", "flac", "aac", "oga", "mp2"]);
+
+const CLOUD_INLINE_LIMIT = 4 * 1024 * 1024;
+const CLOUD_CHUNK_CONCURRENCY = 5;
+const CLOUD_CHUNK_SEGMENT_SECONDS = 240;
 
 function buildMultipartBody(fileBuffer, fileName, contentType, fields = {}) {
   const boundary = `----OpenWhispr${Date.now()}`;
@@ -115,6 +121,146 @@ function postMultipart(url, body, boundary, headers = {}) {
     req.write(body);
     req.end();
   });
+}
+
+function interpretTranscribeResponse(data) {
+  if (data.statusCode === 401) {
+    throw Object.assign(new Error("Session expired"), { code: "AUTH_EXPIRED" });
+  }
+  if (data.statusCode === 503) {
+    throw Object.assign(new Error("Request timed out"), { code: "SERVER_ERROR" });
+  }
+  if (data.statusCode === 429) {
+    throw Object.assign(new Error("Daily word limit reached"), {
+      code: "LIMIT_REACHED",
+      ...data.data,
+    });
+  }
+  if (data.statusCode === 422 && data.data?.code === "NO_SPEECH_DETECTED") {
+    throw Object.assign(new Error(data.data.error || "No speech detected in audio"), {
+      code: "NO_SPEECH_DETECTED",
+    });
+  }
+  if (data.statusCode !== 200) {
+    throw new Error(data.data?.error || `API error: ${data.statusCode}`);
+  }
+  return data.data;
+}
+
+async function chunkedCloudTranscribe({
+  buffer = null,
+  filePath = null,
+  apiUrl,
+  cookieHeader,
+  multipartFields = {},
+  onProgress,
+  concurrencyLimit = CLOUD_CHUNK_CONCURRENCY,
+  segmentDuration = CLOUD_CHUNK_SEGMENT_SECONDS,
+}) {
+  const { splitAudioFile } = require("./ffmpegUtils");
+
+  const jobId = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+  const chunkDir = path.join(os.tmpdir(), `ow-chunks-${jobId}`);
+  let tmpInputPath = null;
+
+  let inputPath = filePath;
+  if (!inputPath && buffer) {
+    tmpInputPath = path.join(os.tmpdir(), `ow-audio-${jobId}.webm`);
+    fs.writeFileSync(tmpInputPath, buffer);
+    inputPath = tmpInputPath;
+  }
+
+  fs.mkdirSync(chunkDir, { recursive: true });
+
+  try {
+    onProgress?.({ stage: "splitting", chunksTotal: 0, chunksCompleted: 0 });
+
+    const chunkPaths = await splitAudioFile(inputPath, chunkDir, { segmentDuration });
+    const totalChunks = chunkPaths.length;
+
+    onProgress?.({ stage: "transcribing", chunksTotal: totalChunks, chunksCompleted: 0 });
+
+    const results = new Array(totalChunks).fill(null);
+    const failureCodes = new Set();
+    let completedCount = 0;
+
+    const transcribeChunk = async (index) => {
+      const chunkBuffer = fs.readFileSync(chunkPaths[index]);
+      const chunkName = path.basename(chunkPaths[index]);
+      const { body, boundary } = buildMultipartBody(
+        chunkBuffer,
+        chunkName,
+        "audio/mpeg",
+        multipartFields
+      );
+      const url = new URL(`${apiUrl}/api/transcribe`);
+      const data = await postMultipart(url, body, boundary, { Cookie: cookieHeader });
+
+      results[index] = interpretTranscribeResponse(data);
+      completedCount++;
+      onProgress?.({
+        stage: "transcribing",
+        chunksTotal: totalChunks,
+        chunksCompleted: completedCount,
+      });
+    };
+
+    const executing = new Set();
+    for (let index = 0; index < totalChunks; index++) {
+      const p = transcribeChunk(index).then(
+        () => executing.delete(p),
+        (err) => {
+          executing.delete(p);
+          if (err.code === "AUTH_EXPIRED" || err.code === "LIMIT_REACHED") throw err;
+          if (err.code) failureCodes.add(err.code);
+          debugLogger.warn(`Chunk ${index} failed`, { error: err.message, code: err.code });
+        }
+      );
+      executing.add(p);
+      if (executing.size >= concurrencyLimit) {
+        await Promise.race(executing);
+      }
+    }
+    await Promise.all(executing);
+
+    const succeeded = results.filter((r) => r !== null);
+    if (succeeded.length === 0) {
+      if (failureCodes.size === 1 && failureCodes.has("NO_SPEECH_DETECTED")) {
+        throw Object.assign(new Error("No speech detected in audio"), {
+          code: "NO_SPEECH_DETECTED",
+        });
+      }
+      throw new Error("All chunks failed to transcribe");
+    }
+
+    const text = results
+      .filter((r) => r !== null)
+      .map((r) => r.text)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const failed = totalChunks - succeeded.length;
+    return {
+      text,
+      responses: succeeded,
+      lastResponse: succeeded[succeeded.length - 1],
+      ...(failed > 0 ? { warning: `${failed} of ${totalChunks} chunks failed` } : {}),
+    };
+  } finally {
+    if (tmpInputPath) {
+      try {
+        fs.unlinkSync(tmpInputPath);
+      } catch {
+        // ignore
+      }
+    }
+    try {
+      fs.rmSync(chunkDir, { recursive: true, force: true });
+    } catch (cleanupErr) {
+      debugLogger.warn("Failed to cleanup chunk dir", { error: cleanupErr.message });
+    }
+  }
 }
 
 class IPCHandlers {
@@ -188,6 +334,9 @@ class IPCHandlers {
       const markdownMirror = require("./markdownMirror");
       const folderName = this._getFolderName(note.folder_id);
       markdownMirror.writeNote(note, folderName);
+      if (note.transcript) {
+        markdownMirror.writeTranscript(note, folderName, this._buildSpeakerMappings(note.id));
+      }
     });
   }
 
@@ -208,10 +357,47 @@ class IPCHandlers {
     return map;
   }
 
+  _buildSpeakerMappings(noteId) {
+    const arr = this.databaseManager.getSpeakerMappings(noteId);
+    const map = {};
+    for (const m of arr) {
+      map[m.speaker_id] = m.display_name;
+    }
+    return map;
+  }
+
+  _resolveOneOnOneOtherParticipant(participantsJson) {
+    if (!participantsJson) return null;
+    let participants;
+    try {
+      participants = JSON.parse(participantsJson);
+    } catch (_) {
+      return null;
+    }
+    if (!Array.isArray(participants) || participants.length === 0) return null;
+    const googleEmails = new Set(
+      this.databaseManager.getGoogleAccounts().map((a) => a.email.toLowerCase())
+    );
+    const isSelf = (p) => p.self === true || googleEmails.has((p.email || "").toLowerCase());
+    const others = participants.filter((p) => !isSelf(p));
+    if (others.length !== 1) return null;
+    const displayName = others[0].displayName || others[0].email;
+    if (!displayName) return null;
+    const email = (others[0].email || "").toLowerCase().trim() || null;
+    return { displayName, email };
+  }
+
   _rebuildMirror(basePath) {
     const markdownMirror = require("./markdownMirror");
     if (basePath) markdownMirror.init(basePath);
-    markdownMirror.rebuildAll(this.databaseManager.getNotes(null, 99999), this._buildFolderMap());
+    const notes = this.databaseManager.getNotes(null, 99999);
+    const speakerMappingsMap = {};
+    for (const note of notes) {
+      if (note.transcript) {
+        speakerMappingsMap[note.id] = this._buildSpeakerMappings(note.id);
+      }
+    }
+    markdownMirror.rebuildAll(notes, this._buildFolderMap(), speakerMappingsMap);
   }
 
   _getFolderName(folderId) {
@@ -680,6 +866,7 @@ class IPCHandlers {
         setImmediate(() => this.broadcastToWindows("note-updated", result.note));
         this._asyncVectorUpsert(result.note);
         this._asyncMirrorWrite(result.note);
+        if (updates.participants) this._tryAutoLabelOneOnOne(id);
       }
       return result;
     });
@@ -1069,35 +1256,13 @@ class IPCHandlers {
         const segments = JSON.parse(note.transcript || "[]");
         if (!segments.length) return { success: false, error: "No transcript available" };
 
-        const speakerMappingsArr = this.databaseManager.getSpeakerMappings(noteId);
-        const speakerMappings = {};
-        for (const m of speakerMappingsArr) {
-          speakerMappings[m.speaker_id] = m.display_name;
-        }
-
-        const title = note.title || "Untitled";
-        const noteDate = new Date(note.created_at);
-        const dateStr =
-          noteDate.toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }) +
-          " " +
-          noteDate.toLocaleTimeString(undefined, {
-            hour: "2-digit",
-            minute: "2-digit",
-          });
-        let participants = [];
-        try {
-          const parsed = JSON.parse(note.participants || "[]");
-          participants = parsed.map((p) => p.name).filter(Boolean);
-        } catch {}
+        const speakerMappings = this._buildSpeakerMappings(noteId);
 
         const { dialog } = require("electron");
         const fs = require("fs");
-        const ext = format === "srt" ? "srt" : format === "json" ? "json" : "txt";
-        const safeName = title.replace(/[/\\?%*:|"<>]/g, "-");
+        const extMap = { srt: "srt", json: "json", md: "md" };
+        const ext = extMap[format] || "txt";
+        const safeName = (note.title || "Untitled").replace(/[/\\?%*:|"<>]/g, "-");
 
         const result = await dialog.showSaveDialog({
           defaultPath: `${safeName}.${ext}`,
@@ -1105,97 +1270,22 @@ class IPCHandlers {
             { name: "Text", extensions: ["txt"] },
             { name: "SubRip Subtitles", extensions: ["srt"] },
             { name: "JSON", extensions: ["json"] },
+            { name: "Markdown", extensions: ["md"] },
           ],
         });
 
         if (result.canceled || !result.filePath) return { success: false };
 
-        const resolveSpeaker = (seg) => {
-          if (seg.speakerName && !seg.speakerIsPlaceholder) return seg.speakerName;
-          if (seg.speaker && speakerMappings[seg.speaker]) return speakerMappings[seg.speaker];
-          if (seg.speaker === "you") return "You";
-          if (seg.speaker) {
-            const num = parseInt(seg.speaker.replace("speaker_", ""), 10);
-            return isNaN(num) ? "Unknown Speaker" : `Speaker ${num + 1}`;
-          }
-          return "Unknown Speaker";
-        };
-
-        const formatTs = (seconds) => {
-          const s = Math.floor(seconds);
-          const h = Math.floor(s / 3600);
-          const m = Math.floor((s % 3600) / 60);
-          const sec = s % 60;
-          return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-        };
-
-        const formatSrtTs = (seconds) => {
-          const s = Math.floor(seconds);
-          const ms = Math.round((seconds - s) * 1000);
-          const h = Math.floor(s / 3600);
-          const m = Math.floor((s % 3600) / 60);
-          const sec = s % 60;
-          return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")},${String(ms).padStart(3, "0")}`;
-        };
-
-        const merged = [];
-        for (const seg of segments) {
-          if (!seg.text?.trim()) continue;
-          const ts = seg.timestamp || 0;
-          const last = merged[merged.length - 1];
-          if (last && last.speaker === (seg.speaker || "") && ts - last.timestamp < 2) {
-            last.text = last.text + " " + seg.text.trim();
-            last.timestamp = ts;
-          } else {
-            merged.push({ ...seg, timestamp: ts, text: seg.text.trim() });
-          }
-        }
-
+        const transcriptFormatter = require("./transcriptFormatter");
         let exportContent;
         if (format === "txt") {
-          const lines = [title, dateStr];
-          if (participants.length) lines.push(`Participants: ${participants.join(", ")}`);
-          lines.push("", "──────────────────────────────────", "");
-          for (const seg of merged) {
-            lines.push(`[${formatTs(seg.timestamp)}] ${resolveSpeaker(seg)}:`);
-            lines.push(seg.text);
-            lines.push("");
-          }
-          exportContent = lines.join("\n");
+          exportContent = transcriptFormatter.formatTxt(note, segments, speakerMappings);
         } else if (format === "srt") {
-          const entries = [];
-          for (let i = 0; i < merged.length; i++) {
-            const seg = merged[i];
-            const nextTs = i + 1 < merged.length ? merged[i + 1].timestamp : seg.timestamp + 3;
-            entries.push(`${i + 1}`);
-            entries.push(`${formatSrtTs(seg.timestamp)} --> ${formatSrtTs(nextTs)}`);
-            entries.push(`${resolveSpeaker(seg)}: ${seg.text}`);
-            entries.push("");
-          }
-          exportContent = entries.join("\n");
+          exportContent = transcriptFormatter.formatSrt(segments, speakerMappings);
+        } else if (format === "md") {
+          exportContent = transcriptFormatter.formatMd(note, segments, speakerMappings);
         } else {
-          const speakersSet = new Set();
-          for (const seg of merged) speakersSet.add(resolveSpeaker(seg));
-          const lastSeg = merged[merged.length - 1];
-          exportContent = JSON.stringify(
-            {
-              metadata: {
-                title,
-                date: dateStr,
-                duration_seconds: lastSeg ? Math.round(lastSeg.timestamp) : 0,
-                speaker_count: speakersSet.size,
-                segment_count: merged.length,
-              },
-              speakers: [...speakersSet],
-              segments: merged.map((seg) => ({
-                speaker: resolveSpeaker(seg),
-                timestamp: seg.timestamp,
-                text: seg.text,
-              })),
-            },
-            null,
-            2
-          );
+          exportContent = transcriptFormatter.formatJson(note, segments, speakerMappings);
         }
 
         fs.writeFileSync(result.filePath, exportContent, "utf-8");
@@ -3124,7 +3214,7 @@ class IPCHandlers {
         if (!cookieHeader) throw new Error("No session cookies available");
 
         const audioData = Buffer.from(audioBuffer);
-        const { body, boundary } = buildMultipartBody(audioData, "audio.webm", "audio/webm", {
+        const multipartFields = {
           language: opts.language,
           prompt: opts.prompt,
           sendLogs: opts.sendLogs,
@@ -3132,14 +3222,40 @@ class IPCHandlers {
           appVersion: app.getVersion(),
           clientVersion: app.getVersion(),
           sessionId: this.sessionId,
-        });
+        };
 
-        debugLogger.debug(
-          "Cloud transcribe request",
-          { audioSize: audioData.length, bodySize: body.length },
-          "cloud-api"
+        debugLogger.debug("Cloud transcribe request", { audioSize: audioData.length }, "cloud-api");
+
+        if (audioData.length > CLOUD_INLINE_LIMIT) {
+          const { text, responses, lastResponse } = await chunkedCloudTranscribe({
+            buffer: audioData,
+            apiUrl,
+            cookieHeader,
+            multipartFields,
+          });
+          const sum = (field) => responses.reduce((s, r) => s + (r?.[field] || 0), 0);
+          return {
+            success: true,
+            text,
+            wordsUsed: lastResponse?.wordsUsed,
+            wordsRemaining: lastResponse?.wordsRemaining,
+            plan: lastResponse?.plan,
+            limitReached: lastResponse?.limitReached || false,
+            sttProvider: lastResponse?.sttProvider,
+            sttModel: lastResponse?.sttModel,
+            sttProcessingMs: sum("sttProcessingMs"),
+            sttWordCount: sum("sttWordCount"),
+            sttLanguage: lastResponse?.sttLanguage,
+            audioDurationMs: sum("audioDurationMs"),
+          };
+        }
+
+        const { body, boundary } = buildMultipartBody(
+          audioData,
+          "audio.webm",
+          "audio/webm",
+          multipartFields
         );
-
         const url = new URL(`${apiUrl}/api/transcribe`);
         const data = await postMultipart(url, body, boundary, { Cookie: cookieHeader });
 
@@ -3149,89 +3265,26 @@ class IPCHandlers {
           "cloud-api"
         );
 
-        if (data.statusCode === 401) {
-          return { success: false, error: "Session expired", code: "AUTH_EXPIRED" };
-        }
-        if (data.statusCode === 503) {
-          return { success: false, error: "Request timed out", code: "SERVER_ERROR" };
-        }
-        if (data.statusCode === 429) {
-          return {
-            success: false,
-            error: "Daily word limit reached",
-            code: "LIMIT_REACHED",
-            limitReached: true,
-            ...data.data,
-          };
-        }
-        if (data.statusCode !== 200) {
-          throw new Error(data.data?.error || `API error: ${data.statusCode}`);
-        }
-
+        const result = interpretTranscribeResponse(data);
         return {
           success: true,
-          text: data.data.text,
-          wordsUsed: data.data.wordsUsed,
-          wordsRemaining: data.data.wordsRemaining,
-          plan: data.data.plan,
-          limitReached: data.data.limitReached || false,
-          sttProvider: data.data.sttProvider,
-          sttModel: data.data.sttModel,
-          sttProcessingMs: data.data.sttProcessingMs,
-          sttWordCount: data.data.sttWordCount,
-          sttLanguage: data.data.sttLanguage,
-          audioDurationMs: data.data.audioDurationMs,
+          text: result.text,
+          wordsUsed: result.wordsUsed,
+          wordsRemaining: result.wordsRemaining,
+          plan: result.plan,
+          limitReached: result.limitReached || false,
+          sttProvider: result.sttProvider,
+          sttModel: result.sttModel,
+          sttProcessingMs: result.sttProcessingMs,
+          sttWordCount: result.sttWordCount,
+          sttLanguage: result.sttLanguage,
+          audioDurationMs: result.audioDurationMs,
         };
       } catch (error) {
         debugLogger.error("Cloud transcription error", { error: error.message }, "cloud-api");
-        return { success: false, error: error.message };
-      }
-    });
-
-    ipcMain.handle("meeting-transcribe-chain", async (event, blobUrl, opts = {}) => {
-      try {
-        const apiUrl = getApiUrl();
-        if (!apiUrl) throw new Error("OpenWhispr API URL not configured");
-
-        const cookieHeader = await getSessionCookies(event);
-        if (!cookieHeader) throw new Error("No session cookies available");
-
-        const response = await fetch(`${apiUrl}/api/transcribe-chain`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Cookie: cookieHeader,
-          },
-          body: JSON.stringify({
-            mediaUrl: blobUrl,
-            skipCleanup: opts.skipCleanup ?? false,
-            agentName: opts.agentName,
-            customDictionary: opts.customDictionary,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || `Chain failed: ${response.status}`);
+        if (error.code) {
+          return { success: false, error: error.message, code: error.code, ...error };
         }
-
-        fetch(`${apiUrl}/api/delete-audio`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Cookie: cookieHeader },
-          body: JSON.stringify({ url: blobUrl }),
-        }).catch((err) => debugLogger.warn("Blob cleanup failed", { error: err.message }));
-
-        return {
-          success: true,
-          text: data.text,
-          rawText: data.rawText,
-          cleanedText: data.cleanedText,
-          processingDurationSec: data.processingDurationSec,
-          speedupFactor: data.speedupFactor,
-        };
-      } catch (error) {
-        debugLogger.error("Meeting chain transcription error", { error: error.message });
         return { success: false, error: error.message };
       }
     });
@@ -3259,17 +3312,36 @@ class IPCHandlers {
             if (cookieHeader) {
               const apiUrl = getApiUrl();
               if (apiUrl) {
-                const { body, boundary } = buildMultipartBody(buffer, "audio.webm", "audio/webm", {
+                const multipartFields = {
                   clientType: "desktop",
                   appVersion: app.getVersion(),
                   sessionId: this.sessionId,
-                });
-                const url = new URL(`${apiUrl}/api/transcribe`);
-                const data = await postMultipart(url, body, boundary, {
-                  Cookie: cookieHeader,
-                });
-                if (data.statusCode === 200 && data.data?.text) {
-                  result = { text: data.data.text, source: "openwhispr", model: "cloud" };
+                };
+                if (buffer.length > CLOUD_INLINE_LIMIT) {
+                  const { text } = await chunkedCloudTranscribe({
+                    buffer,
+                    apiUrl,
+                    cookieHeader,
+                    multipartFields,
+                  });
+                  result = { text, source: "openwhispr", model: "cloud" };
+                } else {
+                  const { body, boundary } = buildMultipartBody(
+                    buffer,
+                    "audio.webm",
+                    "audio/webm",
+                    multipartFields
+                  );
+                  const url = new URL(`${apiUrl}/api/transcribe`);
+                  const data = await postMultipart(url, body, boundary, {
+                    Cookie: cookieHeader,
+                  });
+                  const responseData = interpretTranscribeResponse(data);
+                  result = {
+                    text: responseData.text,
+                    source: "openwhispr",
+                    model: "cloud",
+                  };
                 }
               }
             }
@@ -3356,9 +3428,12 @@ class IPCHandlers {
       } catch (error) {
         debugLogger.error(
           "Retry transcription failed",
-          { id, error: error.message },
+          { id, error: error.message, code: error.code },
           "audio-storage"
         );
+        if (error.code) {
+          return { success: false, error: error.message, code: error.code, ...error };
+        }
         return { success: false, error: error.message };
       }
     });
@@ -3889,10 +3964,49 @@ class IPCHandlers {
     let meetingPendingMicFinals = [];
     let meetingPendingMicFinalTimer = null;
     let meetingAecEnabled = false;
+    let meetingOneOnOneAttendee = null;
+    let meetingOneOnOneProfileBound = false;
 
     const getLiveSpeakerProfiles = () => this.databaseManager.getSpeakerProfiles(true);
     const shouldSuppressMicTranscriptSegment = (startedAt, endedAt = Date.now()) =>
       meetingEchoLeakDetector.shouldSuppressMicSegment(startedAt, endedAt);
+
+    const resolveOneOnOneAttendeeForNote = (noteId) => {
+      if (!noteId) return null;
+      try {
+        const note = this.databaseManager.getNote(noteId);
+        return this._resolveOneOnOneOtherParticipant(note?.participants);
+      } catch (_) {
+        return null;
+      }
+    };
+
+    const bindOneOnOneAttendeeToSpeaker = (speakerId) => {
+      if (!meetingOneOnOneAttendee || meetingOneOnOneProfileBound || !speakerId) return;
+      const embedding = liveSpeakerIdentifier.getSpeakerEmbedding(speakerId);
+      if (!embedding) return;
+      try {
+        const buffer = Buffer.from(embedding.buffer, embedding.byteOffset, embedding.byteLength);
+        const profile = this.databaseManager.upsertSpeakerProfile(
+          meetingOneOnOneAttendee.displayName,
+          meetingOneOnOneAttendee.email,
+          buffer
+        );
+        liveSpeakerIdentifier.mapSpeaker(
+          speakerId,
+          profile.id,
+          meetingOneOnOneAttendee.displayName,
+          null
+        );
+        meetingOneOnOneProfileBound = true;
+      } catch (error) {
+        debugLogger.warn(
+          "1-on-1 attendee profile binding failed",
+          { error: error.message },
+          "speaker"
+        );
+      }
+    };
 
     const dispatchMeetingAudioBuffer = (buffer, source) => {
       if (meetingLocalMode) {
@@ -4031,6 +4145,12 @@ class IPCHandlers {
             return;
           }
 
+          bindOneOnOneAttendeeToSpeaker(identification.speakerId);
+
+          const displayName = meetingOneOnOneAttendee
+            ? meetingOneOnOneAttendee.displayName
+            : identification.displayName;
+
           const startTime = Math.max(
             meetingLiveSpeakerStartedAt || 0,
             (meetingLiveSpeakerStartedAt || 0) + identification.startTime * 1000
@@ -4041,6 +4161,7 @@ class IPCHandlers {
           );
           const enrichedIdentification = {
             ...identification,
+            displayName,
             startTime,
             endTime,
           };
@@ -4057,7 +4178,7 @@ class IPCHandlers {
             ) {
               applyConfirmedSpeaker(seg, {
                 speaker: identification.speakerId,
-                speakerName: identification.displayName || seg.speakerName,
+                speakerName: displayName || seg.speakerName,
                 speakerIsPlaceholder: false,
               });
             }
@@ -4284,6 +4405,8 @@ class IPCHandlers {
       void stopLiveSpeakerIdentification();
       meetingLiveSpeakerState = null;
       meetingLiveSpeakerStartedAt = null;
+      meetingOneOnOneAttendee = null;
+      meetingOneOnOneProfileBound = false;
       meetingLocalMode = false;
       meetingLocalBuffers = { mic: [], system: [] };
       if (meetingDiarizationStream) {
@@ -4511,6 +4634,8 @@ class IPCHandlers {
         const systemAudioPlan = await getMeetingSystemAudioPlan();
         let { mode: systemAudioMode, strategy: systemAudioStrategy } = systemAudioPlan;
         meetingEchoLeakDetector.reset();
+        meetingOneOnOneAttendee = resolveOneOnOneAttendeeForNote(options.noteId);
+        meetingOneOnOneProfileBound = false;
 
         if (systemAudioMode === "unsupported" && this._meetingSystemStreaming?.isConnected) {
           await this._meetingSystemStreaming.disconnect().catch(() => ({ text: "" }));
@@ -4533,7 +4658,12 @@ class IPCHandlers {
             systemAudioStrategy,
             "during warm-start reuse"
           );
-          return { success: true, systemAudioMode, systemAudioStrategy };
+          return {
+            success: true,
+            systemAudioMode,
+            systemAudioStrategy,
+            oneOnOneAttendee: meetingOneOnOneAttendee,
+          };
         }
 
         if (options.provider === "local") {
@@ -4564,7 +4694,12 @@ class IPCHandlers {
             systemAudioStrategy,
           });
 
-          return { success: true, systemAudioMode, systemAudioStrategy };
+          return {
+            success: true,
+            systemAudioMode,
+            systemAudioStrategy,
+            oneOnOneAttendee: meetingOneOnOneAttendee,
+          };
         }
 
         if (options.provider !== "openai-realtime") {
@@ -4572,10 +4707,8 @@ class IPCHandlers {
         }
 
         await connectRealtimeStreaming(event, options);
-        await startLiveSpeakerIdentification(
-          BrowserWindow.fromWebContents(event.sender),
-          systemAudioMode
-        );
+        const realtimeWin = BrowserWindow.fromWebContents(event.sender);
+        await startLiveSpeakerIdentification(realtimeWin, systemAudioMode);
         await startMeetingAec(systemAudioMode);
         systemAudioStrategy = await startMeetingSystemAudio(
           event,
@@ -4583,7 +4716,12 @@ class IPCHandlers {
           systemAudioStrategy,
           "in realtime mode"
         );
-        return { success: true, systemAudioMode, systemAudioStrategy };
+        return {
+          success: true,
+          systemAudioMode,
+          systemAudioStrategy,
+          oneOnOneAttendee: meetingOneOnOneAttendee,
+        };
       } catch (error) {
         await rollbackMeetingTranscriptionStart();
         this.meetingDetectionEngine?.setUserRecording(false);
@@ -5322,6 +5460,46 @@ class IPCHandlers {
       }
     });
 
+    ipcMain.handle("cloud-api-request", async (event, opts) => {
+      try {
+        const apiUrl = getApiUrl();
+        if (!apiUrl) throw new Error("OpenWhispr API URL not configured");
+
+        const cookieHeader = await getSessionCookies(event);
+        if (!cookieHeader) throw new Error("No session cookies available");
+
+        const method = (opts.method || "GET").toUpperCase();
+        const headers = { Cookie: cookieHeader };
+        const fetchOpts = { method, headers };
+
+        if (opts.body !== undefined) {
+          headers["Content-Type"] = "application/json";
+          fetchOpts.body = JSON.stringify(opts.body);
+        }
+
+        const response = await fetch(`${apiUrl}${opts.path}`, fetchOpts);
+
+        if (response.status === 401) {
+          return { success: false, error: "Session expired", code: "AUTH_EXPIRED" };
+        }
+        if (response.status === 503) {
+          return { success: false, error: "Service temporarily unavailable", code: "SERVER_ERROR" };
+        }
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          const message = data?.error?.message || data?.error || `API error: ${response.status}`;
+          return { success: false, error: message };
+        }
+
+        return { success: true, data };
+      } catch (error) {
+        debugLogger.error(`Cloud API request error (${opts?.path}):`, error);
+        return { success: false, error: error.message };
+      }
+    });
+
     ipcMain.handle("get-stt-config", async (event) => {
       try {
         const apiUrl = getApiUrl();
@@ -5353,11 +5531,6 @@ class IPCHandlers {
     });
 
     ipcMain.handle("transcribe-audio-file-cloud", async (event, filePath) => {
-      const fs = require("fs");
-      const os = require("os");
-      const { splitAudioFile } = require("./ffmpegUtils");
-      const FILE_SIZE_LIMIT = 25 * 1024 * 1024;
-      const CONCURRENCY_LIMIT = 5;
       try {
         const apiUrl = getApiUrl();
         if (!apiUrl) throw new Error("OpenWhispr API URL not configured");
@@ -5365,129 +5538,29 @@ class IPCHandlers {
         const cookieHeader = await getSessionCookies(event);
         if (!cookieHeader) throw new Error("No session cookies available");
 
+        const multipartFields = {
+          source: "file_upload",
+          clientType: "desktop",
+          appVersion: app.getVersion(),
+          clientVersion: app.getVersion(),
+          sessionId: this.sessionId,
+        };
+
         const fileSize = fs.statSync(filePath).size;
 
-        if (fileSize > FILE_SIZE_LIMIT) {
+        if (fileSize > CLOUD_INLINE_LIMIT) {
           debugLogger.debug("Large file detected, using client-side chunking", {
             fileSize,
             filePath: path.basename(filePath),
           });
-
-          const chunkDir = path.join(os.tmpdir(), `ow-chunks-${Date.now()}`);
-          fs.mkdirSync(chunkDir, { recursive: true });
-
-          try {
-            event.sender.send("upload-transcription-progress", {
-              stage: "splitting",
-              chunksTotal: 0,
-              chunksCompleted: 0,
-            });
-
-            const chunkPaths = await splitAudioFile(filePath, chunkDir, {
-              segmentDuration: 240, // ~3.75 MB/chunk, under Vercel's 4.5 MB payload limit
-            });
-            const totalChunks = chunkPaths.length;
-
-            debugLogger.debug("Audio split into chunks", { totalChunks });
-
-            event.sender.send("upload-transcription-progress", {
-              stage: "transcribing",
-              chunksTotal: totalChunks,
-              chunksCompleted: 0,
-            });
-
-            const results = new Array(totalChunks).fill(null);
-            let completedCount = 0;
-
-            const transcribeChunk = async (index) => {
-              const chunkBuffer = fs.readFileSync(chunkPaths[index]);
-              const chunkName = path.basename(chunkPaths[index]);
-
-              const { body, boundary } = buildMultipartBody(chunkBuffer, chunkName, "audio/mpeg", {
-                source: "file_upload",
-                clientType: "desktop",
-                appVersion: app.getVersion(),
-                clientVersion: app.getVersion(),
-                sessionId: this.sessionId,
-              });
-
-              const url = new URL(`${apiUrl}/api/transcribe`);
-              const data = await postMultipart(url, body, boundary, { Cookie: cookieHeader });
-
-              if (data.statusCode === 401) {
-                throw Object.assign(new Error("Session expired"), { code: "AUTH_EXPIRED" });
-              }
-              if (data.statusCode === 503) {
-                throw Object.assign(new Error("Request timed out"), { code: "SERVER_ERROR" });
-              }
-              if (data.statusCode === 429) {
-                throw Object.assign(new Error("Daily word limit reached"), {
-                  code: "LIMIT_REACHED",
-                  ...data.data,
-                });
-              }
-              if (data.statusCode !== 200) {
-                throw new Error(data.data?.error || `API error: ${data.statusCode}`);
-              }
-
-              results[index] = data.data;
-              completedCount++;
-
-              event.sender.send("upload-transcription-progress", {
-                stage: "transcribing",
-                chunksTotal: totalChunks,
-                chunksCompleted: completedCount,
-              });
-            };
-
-            const indices = Array.from({ length: totalChunks }, (_, i) => i);
-            const executing = new Set();
-
-            for (const index of indices) {
-              const p = transcribeChunk(index).then(
-                () => executing.delete(p),
-                (err) => {
-                  executing.delete(p);
-                  if (err.code === "AUTH_EXPIRED" || err.code === "LIMIT_REACHED") throw err;
-                  debugLogger.warn(`Chunk ${index} failed`, { error: err.message });
-                }
-              );
-              executing.add(p);
-              if (executing.size >= CONCURRENCY_LIMIT) {
-                await Promise.race(executing);
-              }
-            }
-            await Promise.all(executing);
-
-            const succeeded = results.filter((r) => r !== null);
-            if (succeeded.length === 0) {
-              throw new Error("All chunks failed to transcribe");
-            }
-
-            const fullText = results
-              .filter((r) => r !== null)
-              .map((r) => r.text)
-              .join(" ")
-              .replace(/\s+/g, " ")
-              .trim();
-
-            const failed = results.filter((r) => r === null).length;
-            if (failed > 0) {
-              debugLogger.warn("Some chunks failed", { failed, total: totalChunks });
-            }
-
-            return {
-              success: true,
-              text: fullText,
-              ...(failed > 0 ? { warning: `${failed} of ${totalChunks} chunks failed` } : {}),
-            };
-          } finally {
-            try {
-              fs.rmSync(chunkDir, { recursive: true, force: true });
-            } catch (cleanupErr) {
-              debugLogger.warn("Failed to cleanup chunk dir", { error: cleanupErr.message });
-            }
-          }
+          const { text, warning } = await chunkedCloudTranscribe({
+            filePath,
+            apiUrl,
+            cookieHeader,
+            multipartFields,
+            onProgress: (payload) => event.sender.send("upload-transcription-progress", payload),
+          });
+          return { success: true, text, ...(warning ? { warning } : {}) };
         }
 
         const audioBuffer = fs.readFileSync(filePath);
@@ -5495,39 +5568,20 @@ class IPCHandlers {
         const contentType = AUDIO_MIME_TYPES[ext] || "audio/mpeg";
         const fileName = path.basename(filePath);
 
-        const { body, boundary } = buildMultipartBody(audioBuffer, fileName, contentType, {
-          source: "file_upload",
-          clientType: "desktop",
-          appVersion: app.getVersion(),
-          clientVersion: app.getVersion(),
-          sessionId: this.sessionId,
-        });
-
+        const { body, boundary } = buildMultipartBody(
+          audioBuffer,
+          fileName,
+          contentType,
+          multipartFields
+        );
         const url = new URL(`${apiUrl}/api/transcribe`);
         const data = await postMultipart(url, body, boundary, { Cookie: cookieHeader });
+        const result = interpretTranscribeResponse(data);
 
-        if (data.statusCode === 401) {
-          return { success: false, error: "Session expired", code: "AUTH_EXPIRED" };
-        }
-        if (data.statusCode === 503) {
-          return { success: false, error: "Request timed out", code: "SERVER_ERROR" };
-        }
-        if (data.statusCode === 429) {
-          return {
-            success: false,
-            error: "Daily word limit reached",
-            code: "LIMIT_REACHED",
-            ...data.data,
-          };
-        }
-        if (data.statusCode !== 200) {
-          throw new Error(data.data?.error || `API error: ${data.statusCode}`);
-        }
-
-        return { success: true, text: data.data.text };
+        return { success: true, text: result.text };
       } catch (error) {
         debugLogger.error("Cloud audio file transcription error", { error: error.message });
-        if (error.code === "AUTH_EXPIRED" || error.code === "LIMIT_REACHED") {
+        if (error.code) {
           return { success: false, error: error.message, code: error.code, ...error };
         }
         return { success: false, error: error.message };
@@ -6762,6 +6816,7 @@ class IPCHandlers {
         buffers[speakerId] = Buffer.from(new Float32Array(arr).buffer);
       }
       this.databaseManager.saveNoteSpeakerEmbeddings(noteId, buffers);
+      this._tryAutoLabelOneOnOne(noteId);
       return { success: true };
     });
   }
@@ -6831,6 +6886,75 @@ class IPCHandlers {
         }
       } catch (err) {
         debugLogger.warn("Retroactive speaker mapping failed", { error: err.message });
+      }
+    });
+  }
+
+  _tryAutoLabelOneOnOne(noteId) {
+    setImmediate(async () => {
+      try {
+        const note = this.databaseManager.getNote(noteId);
+        const other = this._resolveOneOnOneOtherParticipant(note?.participants);
+        if (!other) return;
+        const { displayName, email } = other;
+
+        const embeddings = this.databaseManager.getNoteSpeakerEmbeddings(noteId);
+        if (!embeddings.length) return;
+
+        const existingMappings = this.databaseManager.getSpeakerMappings(noteId);
+        const mappedSpeakers = new Set(existingMappings.map((m) => m.speaker_id));
+
+        const transcript = note.transcript ? JSON.parse(note.transcript) : [];
+        const systemSpeakers = new Set(
+          transcript.filter((s) => s.source !== "mic" && s.speaker).map((s) => s.speaker)
+        );
+
+        const unmapped = embeddings.filter(
+          (e) => !mappedSpeakers.has(e.speaker_id) && systemSpeakers.has(e.speaker_id)
+        );
+        if (!unmapped.length) return;
+
+        let profile = null;
+        for (const emb of unmapped) {
+          profile = this.databaseManager.upsertSpeakerProfile(
+            displayName,
+            email,
+            emb.embedding,
+            profile?.id ?? null
+          );
+          this.databaseManager.setSpeakerMapping(noteId, emb.speaker_id, profile.id, displayName);
+          liveSpeakerIdentifier.mapSpeaker(emb.speaker_id, profile.id, displayName, noteId);
+        }
+
+        const unmappedSystemSpeakers = new Set(unmapped.map((e) => e.speaker_id));
+        let changed = false;
+        for (const seg of transcript) {
+          if (!unmappedSystemSpeakers.has(seg.speaker)) continue;
+          if (seg.speakerName && !seg.speakerIsPlaceholder) continue;
+          if (canAutoRelabelSpeaker(seg)) {
+            applyConfirmedSpeaker(seg, { speakerName: displayName, speakerIsPlaceholder: false });
+          } else {
+            seg.speakerName = displayName;
+            seg.speakerIsPlaceholder = false;
+          }
+          changed = true;
+        }
+
+        if (changed) {
+          this.databaseManager.updateNote(noteId, { transcript: JSON.stringify(transcript) });
+          const updated = this.databaseManager.getNote(noteId);
+          if (updated) this.broadcastToWindows("note-updated", updated);
+        }
+
+        if (profile) this._retroactiveMapping(profile);
+
+        debugLogger.info(
+          "Auto-labeled 1-on-1 meeting speakers",
+          { noteId, displayName, speakerCount: unmapped.length },
+          "speaker"
+        );
+      } catch (err) {
+        debugLogger.warn("Auto-label 1-on-1 failed", { noteId, error: err.message }, "speaker");
       }
     });
   }

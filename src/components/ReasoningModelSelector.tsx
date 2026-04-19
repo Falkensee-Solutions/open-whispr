@@ -21,6 +21,7 @@ import { getProviderIcon, isMonochromeProvider } from "../utils/providerIcons";
 import { isSecureEndpoint } from "../utils/urlUtils";
 import { createExternalLinkHandler } from "../utils/externalLinks";
 import { getCachedPlatform } from "../utils/platform";
+import { useSettingsStore } from "../stores/settingsStore";
 
 type CloudModelOption = {
   value: string;
@@ -661,6 +662,7 @@ export default function ReasoningModelSelector({
 
   const handleModeChange = async (newMode: "cloud" | "local") => {
     setSelectedMode(newMode);
+    useSettingsStore.getState().setReasoningMode(newMode === "local" ? "local" : "providers");
 
     if (newMode === "cloud") {
       window.electronAPI?.llamaServerStop?.();

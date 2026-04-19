@@ -12,11 +12,11 @@
     },
     "noteFiles": {
       "title": "Save notes as files",
-      "description": "Automatically save notes as .md files on disk, organized by folder",
+      "description": "Automatically save notes and transcripts as files on disk, organized by folder",
       "path": "Save location",
       "changePath": "Change location",
       "rebuild": "Rebuild all files",
-      "rebuildDescription": "Re-sync all notes to disk"
+      "rebuildDescription": "Re-sync all notes and transcripts to disk"
     }
   },
   "tray": {
@@ -133,6 +133,7 @@
     "cancel": "Cancel",
     "recommended": "Recommended",
     "active": "Active",
+    "freeAccountRequired": "Free account required",
     "cloud": "Cloud",
     "local": "Local",
     "apiKey": "API Key",
@@ -1522,7 +1523,11 @@
       "clearAllAudio": "Clear All Audio",
       "clearAllAudioConfirm": "Delete all stored audio files? This cannot be undone.",
       "dataRetention": "Data Retention",
-      "dataRetentionDescription": "Store transcriptions and audio locally in your history. When disabled, transcriptions are pasted but not saved."
+      "dataRetentionDescription": "Store transcriptions and audio locally in your history. When disabled, transcriptions are pasted but not saved.",
+      "hoursAgo": "{{count}}h ago",
+      "justNow": "just now",
+      "lastSynced": "Last synced {{time}}",
+      "minutesAgo": "{{count}}m ago"
     },
     "prompts": {
       "description": "View, customize, and test the unified system prompt that powers text cleanup and instruction detection",
@@ -1685,7 +1690,7 @@
     "support": "Support",
     "limitReached": "Weekly limit reached",
     "limitReachedDescription": "Upgrade to Pro for unlimited transcriptions.",
-    "upgradeToPro": "Upgrade to Pro",
+    "viewPlans": "View Plans",
     "upgradeTitle": "Upgrade to Pro",
     "upgradeDescription": "Unlimited transcriptions and premium features.",
     "learnMore": "Learn more",
@@ -1844,6 +1849,7 @@
       "asTranscriptText": "As Plain Text (.txt)",
       "asSubtitles": "As Subtitles (.srt)",
       "asJson": "As JSON (.json)",
+      "asTranscriptMarkdown": "As Markdown (.md)",
       "raw": "Raw",
       "enhanced": "Enhanced",
       "saving": "Saving",
@@ -1893,6 +1899,7 @@
       "selectFolder": "Select folder",
       "transcriptionFailed": "Transcription failed",
       "errorOccurred": "An error occurred",
+      "noSpeechDetected": "No speech detected in this audio.",
       "noProviderTitle": "No transcription provider set up",
       "noProviderDescription": "Add an API key or download a local model to start transcribing.",
       "noProviderAction": "Open Transcription Settings",

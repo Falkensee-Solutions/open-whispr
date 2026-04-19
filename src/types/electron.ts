@@ -467,7 +467,7 @@ declare global {
       ) => Promise<{ success: boolean; error?: string }>;
       exportTranscript: (
         noteId: number,
-        format: "txt" | "srt" | "json"
+        format: "txt" | "srt" | "json" | "md"
       ) => Promise<{ success: boolean; error?: string }>;
       searchNotes: (query: string, limit?: number) => Promise<NoteItem[]>;
       semanticSearchNotes: (query: string, limit?: number) => Promise<NoteItem[]>;
@@ -1047,6 +1047,14 @@ declare global {
         error?: string;
       }>;
 
+      // Authenticated cloud API proxy
+      cloudApiRequest?: (opts: { method?: string; path: string; body?: unknown }) => Promise<{
+        success: boolean;
+        data?: unknown;
+        error?: string;
+        code?: string;
+      }>;
+
       // Cloud audio file transcription
       transcribeAudioFileCloud?: (filePath: string) => Promise<{
         success: boolean;
@@ -1375,24 +1383,6 @@ declare global {
       }) => Promise<{ success: boolean }>;
       getMD5Hash: (text: string) => Promise<string>;
 
-      // Meeting chain transcription (BaseTen)
-      meetingTranscribeChain?: (
-        blobUrl: string,
-        opts?: {
-          skipCleanup?: boolean;
-          agentName?: string;
-          customDictionary?: string[];
-        }
-      ) => Promise<{
-        success: boolean;
-        text?: string;
-        rawText?: string;
-        cleanedText?: string;
-        processingDurationSec?: number;
-        speedupFactor?: number;
-        error?: string;
-      }>;
-
       // Meeting transcription (streaming, dual-channel)
       meetingTranscriptionPrepare?: (options: {
         provider?: string;
@@ -1403,11 +1393,13 @@ declare global {
         provider?: string;
         model?: string;
         language?: string;
+        noteId?: number | null;
       }) => Promise<{
         success: boolean;
         error?: string;
         systemAudioMode?: SystemAudioMode;
         systemAudioStrategy?: SystemAudioStrategy;
+        oneOnOneAttendee?: { displayName: string; email: string | null } | null;
       }>;
       meetingTranscriptionSend?: (buffer: ArrayBuffer, source: "mic" | "system") => void;
       meetingTranscriptionStop?: () => Promise<{
