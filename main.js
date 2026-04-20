@@ -601,13 +601,11 @@ async function startApp() {
   const startMinimized = environmentManager.getStartMinimized();
   if (debugLogger) debugLogger.info("Start minimized", { enabled: startMinimized });
   await windowManager.createMainWindow();
-  if (!startMinimized) {
-    await windowManager.createControlPanelWindow();
-  }
 
-  // Create agent window (hidden) and set up agent hotkey
-  await windowManager.createAgentWindow();
-
+  // Register all secondary hotkeys immediately after main window creation,
+  // BEFORE other window loads (control panel, agent) which can block for seconds.
+  // All callbacks access windows via windowManager dynamically, so they work
+  // even before those windows exist.
   const agentHotkeyCallback = () => {
     if (hotkeyManager.isInListeningMode()) return;
     windowManager.toggleAgentOverlay();
@@ -685,6 +683,12 @@ async function startApp() {
       return { success: true };
     }
   });
+
+  // Create remaining windows after hotkeys are registered
+  if (!startMinimized) {
+    await windowManager.createControlPanelWindow();
+  }
+  await windowManager.createAgentWindow();
 
   // Phase 2: Initialize remaining managers after windows are visible
   initializeDeferredManagers();
